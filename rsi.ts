@@ -97,9 +97,9 @@ function initCandleStickWS(symbol: string, interval: string) {
     }
     if (!message.k || !message.k.x) return;
     const candle = candleSticksFromWSData(message);
-    console.log("Fetched candlestick:", candle); // Log the fetched candlestick
+    // console.log("Fetched candlestick:", candle); // Log the fetched candlestick
     const success = addCandleStick(candle);
-    console.log("Candlestick added:", success); // Log if the candlestick was added successfully
+    // console.log("Candlestick added:", success); // Log if the candlestick was added successfully
     if (!success) {
       console.log("Reconnecting due to candlestick not being added.");
       reconnect();

@@ -62,12 +62,13 @@ async function trade(
     let priceInTicks: number;
     const currentPrice = priceStream;
 
+    // Always place limit orders based on the current price and percentage
     if (rsi > 75) {
-      console.log(`RSI is above 75. Placing SELL order for ${pair}.`);
+      console.log(`RSI is above 75. Placing SELL limit order for ${pair}.`);
       side = Side.Ask;
       priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
     } else if (rsi < 25) {
-      console.log(`RSI is below 25. Placing BUY order for ${pair}.`);
+      console.log(`RSI is below 25. Placing BUY limit order for ${pair}.`);
       side = Side.Bid;
       priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
     } else {
@@ -76,13 +77,13 @@ async function trade(
           console.log(`RSI is within the sideway range, ${pair}.`);
           if (wma45 < config.WMAlimitBuy) {
             console.log(
-              `WMA45 is below the buy limit. Placing BUY order for ${pair}.\n`
+              `WMA45 is below the buy limit. Placing BUY limit order for ${pair}.\n`
             );
             side = Side.Bid;
             priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
           } else {
             console.log(
-              `WMA45 is not below the buy limit. No BUY order placed for ${pair}.\n`
+              `WMA45 is not below the buy limit. No BUY limit order placed for ${pair}.\n`
             );
             await new Promise((resolve) =>
               setTimeout(resolve, timeCancel * 1000)
@@ -91,7 +92,7 @@ async function trade(
           }
         } else if (rsi > Math.max(wma45, ema9) && wma45 > config.WMAlimitSell) {
           console.log(
-            `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL order for ${pair}.\n`
+            `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL limit order for ${pair}.\n`
           );
           side = Side.Ask;
           priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
@@ -107,13 +108,13 @@ async function trade(
       } else {
         if (wma45 < config.WMAlimitBuy && rsi < wma45) {
           console.log(
-            `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY order for ${pair}.\n`
+            `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY limit order for ${pair}.\n`
           );
           side = Side.Bid;
           priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
         } else if (wma45 > config.WMAlimitSell && rsi > wma45) {
           console.log(
-            `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL order for ${pair}.\n`
+            `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL limit order for ${pair}.\n`
           );
           side = Side.Ask;
           priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
@@ -193,6 +194,26 @@ async function main() {
     );
     console.log("Base balance: ", baseBalance);
     console.log("Quote balance: ", quoteBalance);
+
+    const symbol = "SOLUSDC";
+    const interval = "5m";
+
+    // Initialize the WebSocket connection to fetch candlestick data
+    initFirstCandleSticks(symbol, interval);
+    initCandleStickWS(symbol, interval);
+    initPriceWS(symbol);
+
+    // Trade
+    await trade(
+      connection,
+      marketState,
+      trader,
+      symbol,
+      config.sideway,
+      config.volume,
+      config.percentage,
+      config.cancelTime
+    );
   }
 }
 
