@@ -1,11 +1,10 @@
 import dotenv from "dotenv";
-
 dotenv.config();
 
-export function getPrivateKeyFromEnv(): string {
-  const privateKey = process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    throw new Error("Private key not found in .env file");
+export function getPrivateKeysFromEnv(): string[] {
+  const privateKeys = process.env.PRIVATE_KEYS;
+  if (!privateKeys) {
+    throw new Error("PRIVATE_KEYS environment variable is not set");
   }
-  return privateKey;
+  return privateKeys.split(",");
 }
