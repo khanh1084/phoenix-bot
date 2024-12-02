@@ -2,11 +2,16 @@ import {
   Connection,
   PublicKey,
   Transaction,
+  Keypair,
   TransactionInstruction,
+  sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import * as Phoenix from "@ellipsis-labs/phoenix-sdk";
 import { MarketState, Side } from "./types";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountInstruction,
+} from "@solana/spl-token";
 
 export async function createPhoenixClient(
   connection: Connection
@@ -34,16 +39,18 @@ export async function getMarketState(
 export async function placeOrder(
   connection: Connection,
   marketState: MarketState,
-  traderPublicKey: PublicKey,
+  trader: Keypair,
   side: Side,
   numBaseLots: number,
   priceInTicks: number
 ): Promise<TransactionInstruction> {
+  const traderPublicKey = trader.publicKey;
+
   // Check user balance
   const { baseBalance, quoteBalance } = await checkUserBalance(
     connection,
     marketState,
-    traderPublicKey
+    trader
   );
 
   // Check if the trader has sufficient balance
@@ -67,6 +74,7 @@ export async function placeOrder(
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
+
   return marketState.createPlaceLimitOrderInstruction(
     orderPacket,
     traderPublicKey
@@ -131,9 +139,9 @@ export async function getCurrentOrders(
 export async function checkUserBalance(
   connection: Connection,
   marketState: MarketState,
-  traderPublicKey: PublicKey
+  trader: Keypair
 ): Promise<{ baseBalance: number; quoteBalance: number }> {
-  // Get the associated token addresses for the trader's base and quote accounts
+  const traderPublicKey = trader.publicKey;
   const baseMint = marketState.data.header.baseParams.mintKey;
   const quoteMint = marketState.data.header.quoteParams.mintKey;
   const baseAccount = getAssociatedTokenAddressSync(baseMint, traderPublicKey);
@@ -142,11 +150,37 @@ export async function checkUserBalance(
     traderPublicKey
   );
 
-  // Get the balances of the trader's base and quote accounts
+  // Create associated token accounts if they do not exist
+  const transaction = new Transaction();
+  const baseAccountInfo = await connection.getAccountInfo(baseAccount);
+  if (!baseAccountInfo) {
+    transaction.add(
+      createAssociatedTokenAccountInstruction(
+        traderPublicKey,
+        baseAccount,
+        traderPublicKey,
+        baseMint
+      )
+    );
+  }
+  const quoteAccountInfo = await connection.getAccountInfo(quoteAccount);
+  if (!quoteAccountInfo) {
+    transaction.add(
+      createAssociatedTokenAccountInstruction(
+        traderPublicKey,
+        quoteAccount,
+        traderPublicKey,
+        quoteMint
+      )
+    );
+  }
+  if (transaction.instructions.length > 0) {
+    await sendAndConfirmTransaction(connection, transaction, [trader]);
+  }
+
   const baseBalance = await connection.getTokenAccountBalance(baseAccount);
   const quoteBalance = await connection.getTokenAccountBalance(quoteAccount);
 
-  // Convert balances to human-readable format
   const baseBalanceReadable =
     (baseBalance.value.uiAmount ?? 0) /
     10 ** marketState.data.header.baseParams.decimals;

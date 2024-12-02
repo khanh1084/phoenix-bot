@@ -131,7 +131,7 @@ async function trade(
       const placeOrderTx = await placeOrder(
         connection,
         marketState,
-        trader.publicKey,
+        trader,
         side,
         volume,
         priceInTicks
@@ -140,7 +140,11 @@ async function trade(
       const placeOrderTxId = await sendAndConfirmTransaction(
         connection,
         new Transaction().add(placeOrderTx),
-        [trader]
+        [trader],
+        {
+          commitment: "confirmed",
+          preflightCommitment: "confirmed",
+        }
       );
       console.log(
         `Order placed. Transaction ID: ${placeOrderTxId}, price: ${priceInTicks}, rsi: ${rsi}, wma: ${wma45}, ema: ${ema9}`
@@ -161,22 +165,23 @@ async function trade(
     const cancelAllOrdersTxId = await sendAndConfirmTransaction(
       connection,
       new Transaction().add(cancelAllOrdersTx),
-      [trader]
+      [trader],
+      {
+        commitment: "confirmed",
+        preflightCommitment: "confirmed",
+      }
     );
     console.log("All orders canceled. Transaction ID: ", cancelAllOrdersTxId);
   }
 }
 
 async function main() {
-  const connection = new Connection(
-    "https://api.mainnet-beta.solana.com",
-    "confirmed"
-  );
   const privateKeys = getPrivateKeysFromEnv();
-
   for (const privateKey of privateKeys) {
     const trader = Keypair.fromSecretKey(base58.decode(privateKey));
+    console.log("Trader public key:", trader.publicKey.toString());
 
+    const connection = new Connection("https://api.mainnet-beta.solana.com");
     const phoenix = await createPhoenixClient(connection);
     const marketState = await getMarketState(phoenix, "SOL/USDC");
 
@@ -184,28 +189,10 @@ async function main() {
     const { baseBalance, quoteBalance } = await checkUserBalance(
       connection,
       marketState,
-      trader.publicKey
+      trader
     );
     console.log("Base balance: ", baseBalance);
     console.log("Quote balance: ", quoteBalance);
-    const symbol = "SOLUSDT";
-    const interval = "5m";
-    // Start fetching candlestick data
-    initFirstCandleSticks(symbol, interval);
-    initCandleStickWS(symbol, interval);
-    initPriceWS(symbol);
-
-    // Start trading
-    trade(
-      connection,
-      marketState,
-      trader,
-      "SOLUSDT",
-      true,
-      config.volume,
-      config.percentage,
-      config.cancelTime
-    ); // Example values
   }
 }
 
