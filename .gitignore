@@ -29,7 +29,7 @@ build/
 Thumbs.db
 
 # package-lock.json
-package-lock.json
+# package-lock.json
 
 test.ts
 test.js
