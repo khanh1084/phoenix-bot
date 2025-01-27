@@ -160,7 +160,7 @@ async function trade(
       console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
     } catch (error: any) {
       console.error(`Error placing order: ${error.message}`);
-      if (error.message.includes("Blockhash not found")) {
+      if (error.message.includes("block height exceeded")) {
         console.log("Retrying transaction with a new blockhash...");
         continue;
       }
@@ -169,31 +169,39 @@ async function trade(
     // Wait for the specified time
     await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
 
-    const cancelAllOrdersTx = await cancelAllOrders(
-      marketState,
-      trader.publicKey
-    );
+    try {
+      const cancelAllOrdersTx = await cancelAllOrders(
+        marketState,
+        trader.publicKey
+      );
 
-    const {
-      blockhash: cancelBlockhash,
-      lastValidBlockHeight: cancelLastValidBlockHeight,
-    } = await connection.getLatestBlockhash();
-    const cancelTransaction = new Transaction({
-      blockhash: cancelBlockhash,
-      lastValidBlockHeight: cancelLastValidBlockHeight,
-      feePayer: trader.publicKey,
-    }).add(cancelAllOrdersTx);
+      const {
+        blockhash: cancelBlockhash,
+        lastValidBlockHeight: cancelLastValidBlockHeight,
+      } = await connection.getLatestBlockhash();
+      const cancelTransaction = new Transaction({
+        blockhash: cancelBlockhash,
+        lastValidBlockHeight: cancelLastValidBlockHeight,
+        feePayer: trader.publicKey,
+      }).add(cancelAllOrdersTx);
 
-    const cancelAllOrdersTxId = await sendAndConfirmTransaction(
-      connection,
-      cancelTransaction,
-      [trader],
-      {
-        commitment: "confirmed",
-        preflightCommitment: "confirmed",
+      const cancelAllOrdersTxId = await sendAndConfirmTransaction(
+        connection,
+        cancelTransaction,
+        [trader],
+        {
+          commitment: "confirmed",
+          preflightCommitment: "confirmed",
+        }
+      );
+      console.log("All orders canceled. Transaction ID: ", cancelAllOrdersTxId);
+    } catch (error: any) {
+      console.error(`Error canceling orders: ${error.message}`);
+      if (error.message.includes("block height exceeded")) {
+        console.log("Retrying cancel transaction with a new blockhash...");
+        continue;
       }
-    );
-    console.log("All orders canceled. Transaction ID: ", cancelAllOrdersTxId);
+    }
   }
 }
 
