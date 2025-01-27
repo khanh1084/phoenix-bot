@@ -207,13 +207,12 @@ async function trade(
             cancelAllOrdersTxId
           );
           break;
-        } catch (error: any) {
-          console.error(`Error canceling orders: ${error.message}`);
-          if (error.message.includes("block height exceeded")) {
-            console.log("Retrying cancel transaction with a new blockhash...");
-            continue;
+        } catch (error) {
+          if (error instanceof SendTransactionError) {
+            console.error("SendTransactionError:", error.message);
+            console.error("Transaction logs:", await error.getLogs(connection));
           } else {
-            throw error;
+            console.error("Error canceling orders:", error);
           }
         }
       }
