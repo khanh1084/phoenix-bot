@@ -4,6 +4,7 @@ import {
   PublicKey,
   sendAndConfirmTransaction,
   Transaction,
+  TransactionCtorFields,
 } from "@solana/web3.js";
 import base58 from "bs58";
 import {
