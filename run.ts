@@ -234,7 +234,10 @@ async function main() {
     console.log("Trader public key:", trader.publicKey.toString());
 
     const connection = new Connection("https://api.mainnet-beta.solana.com");
+    console.log("Creating Phoenix client...");
     const phoenix = await createPhoenixClient(connection);
+    console.log("Creating Phoenix client... Done");
+    console.log("Getting market state...");
     const marketState = await getMarketState(phoenix, "SOL/USDC");
 
     // Check user balance
