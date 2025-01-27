@@ -139,9 +139,11 @@ async function trade(
         priceInTicks
       );
 
-      const { blockhash } = await connection.getRecentBlockhash();
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
       const transaction = new Transaction({
-        recentBlockhash: blockhash,
+        blockhash,
+        lastValidBlockHeight,
         feePayer: trader.publicKey,
       }).add(placeOrderTx);
 
