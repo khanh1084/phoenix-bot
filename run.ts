@@ -132,7 +132,7 @@ async function trade(
 
     side = Side.Ask;
     priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
-
+    console.log(`Placing ${side} order for ${volume} lots at ${priceInTicks}`);
     try {
       const placeOrderTx = await placeOrder(
         connection,
