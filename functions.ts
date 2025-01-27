@@ -175,6 +175,10 @@ export async function checkUserBalance(
     );
   }
   if (transaction.instructions.length > 0) {
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.lastValidBlockHeight = lastValidBlockHeight;
     await sendAndConfirmTransaction(connection, transaction, [trader]);
   }
 
