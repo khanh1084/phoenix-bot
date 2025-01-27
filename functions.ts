@@ -7,7 +7,7 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import * as Phoenix from "@ellipsis-labs/phoenix-sdk";
-import { MarketState, Side } from "./types";
+import { MarketState, Side } from "@ellipsis-labs/phoenix-sdk";
 import {
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountInstruction,
