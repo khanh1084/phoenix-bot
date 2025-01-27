@@ -186,13 +186,19 @@ export async function checkUserBalance(
         await sendAndConfirmTransaction(connection, transaction, [trader]);
         break;
       } catch (error: any) {
+        // Retry on common rate-limit or blockhash errors
         if (
           retries < 3 &&
-          (error.message?.includes("block height exceeded") ||
+          (error.message?.includes("429") ||
+            error.message?.includes("block hash not found") ||
             error.message?.includes(
               "TransactionExpiredBlockheightExceededError"
             ))
         ) {
+          // Wait a bit before retrying
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (retries + 1))
+          );
           retries++;
           continue;
         } else {
@@ -202,18 +208,20 @@ export async function checkUserBalance(
     }
   }
 
-  const baseBalance = await connection.getTokenAccountBalance(baseAccount);
-  const quoteBalance = await connection.getTokenAccountBalance(quoteAccount);
+  const baseBalanceValue = await connection.getTokenAccountBalance(baseAccount);
+  const quoteBalanceValue = await connection.getTokenAccountBalance(
+    quoteAccount
+  );
 
-  const baseBalanceReadable =
-    (baseBalance.value.uiAmount ?? 0) /
+  const baseBalance =
+    (baseBalanceValue.value.uiAmount ?? 0) /
     10 ** marketState.data.header.baseParams.decimals;
-  const quoteBalanceReadable =
-    (quoteBalance.value.uiAmount ?? 0) /
+  const quoteBalance =
+    (quoteBalanceValue.value.uiAmount ?? 0) /
     10 ** marketState.data.header.quoteParams.decimals;
 
   return {
-    baseBalance: baseBalanceReadable || 0,
-    quoteBalance: quoteBalanceReadable || 0,
+    baseBalance: baseBalance || 0,
+    quoteBalance: quoteBalance || 0,
   };
 }
