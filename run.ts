@@ -26,6 +26,7 @@ import {
   initPriceWS,
 } from "./rsi";
 import { config } from "./config";
+import { SendTransactionError } from "@solana/web3.js";
 
 async function trade(
   connection: Connection,
@@ -129,49 +130,41 @@ async function trade(
       }
     }
 
-    let placeOrderTxId;
-    while (true) {
-      try {
-        const placeOrderTx = await placeOrder(
-          connection,
-          marketState,
-          trader,
-          side,
-          volume,
-          priceInTicks
-        );
+    try {
+      const placeOrderTx = await placeOrder(
+        connection,
+        marketState,
+        trader,
+        side,
+        volume,
+        priceInTicks
+      );
 
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash();
-        const transaction = new Transaction({
-          blockhash,
-          lastValidBlockHeight,
-          feePayer: trader.publicKey,
-        }).add(placeOrderTx);
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
+      const transaction = new Transaction({
+        blockhash,
+        lastValidBlockHeight,
+        feePayer: trader.publicKey,
+      }).add(placeOrderTx);
 
-        placeOrderTxId = await sendAndConfirmTransaction(
-          connection,
-          transaction,
-          [trader],
-          {
-            commitment: "confirmed",
-            preflightCommitment: "confirmed",
-          }
-        );
-
-        console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
-        break;
-      } catch (error: any) {
-        console.error(`Error placing order: ${error.message}`);
-        if (
-          error.message.includes("block height exceeded") ||
-          error.message.includes("TransactionExpiredBlockheightExceededError")
-        ) {
-          console.log("Retrying transaction with a new blockhash...");
-          continue;
-        } else {
-          throw error;
+      const placeOrderTxId = await sendAndConfirmTransaction(
+        connection,
+        transaction,
+        [trader],
+        {
+          commitment: "confirmed",
+          preflightCommitment: "confirmed",
         }
+      );
+
+      console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
+    } catch (error) {
+      if (error instanceof SendTransactionError) {
+        console.error("SendTransactionError:", error.message);
+        console.error("Transaction logs:", error.getLogs());
+      } else {
+        console.error("Error placing order:", error);
       }
     }
 
