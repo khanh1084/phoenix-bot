@@ -167,9 +167,9 @@ async function trade(
     const { blockhash: cancelBlockhash } =
       await connection.getRecentBlockhash();
     const cancelTransaction = new Transaction({
-      blockhash: cancelBlockhash,
+      recentBlockhash: cancelBlockhash,
       feePayer: trader.publicKey,
-    } as TransactionBlockhashCtor).add(cancelAllOrdersTx);
+    } as TransactionCtorFields).add(cancelAllOrdersTx);
 
     const cancelAllOrdersTxId = await sendAndConfirmTransaction(
       connection,
