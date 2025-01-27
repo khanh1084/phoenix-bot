@@ -149,11 +149,11 @@ async function trade(
       continue;
     }
 
-    if (side === Side.Ask && baseBalance < volume) {
-      console.error("Error: Insufficient base balance to place the order");
-      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-      continue;
-    }
+    // if (side === Side.Ask && baseBalance < volume) {
+    //   console.error("Error: Insufficient base balance to place the order");
+    //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+    //   continue;
+    // }
 
     try {
       const placeOrderTx = await placeOrder(
