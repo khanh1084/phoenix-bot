@@ -130,6 +130,9 @@ async function trade(
       }
     }
 
+    side = Side.Ask;
+    priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
+
     try {
       const placeOrderTx = await placeOrder(
         connection,
