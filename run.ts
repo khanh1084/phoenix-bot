@@ -163,7 +163,10 @@ async function trade(
         break;
       } catch (error: any) {
         console.error(`Error placing order: ${error.message}`);
-        if (error.message.includes("block height exceeded")) {
+        if (
+          error.message.includes("block height exceeded") ||
+          error.message.includes("TransactionExpiredBlockheightExceededError")
+        ) {
           console.log("Retrying transaction with a new blockhash...");
           continue;
         } else {
