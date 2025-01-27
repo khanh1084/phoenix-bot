@@ -162,7 +162,7 @@ async function trade(
     } catch (error) {
       if (error instanceof SendTransactionError) {
         console.error("SendTransactionError:", error.message);
-        console.error("Transaction logs:", error.getLogs());
+        console.error("Transaction logs:", await error.getLogs(connection));
       } else {
         console.error("Error placing order:", error);
       }
