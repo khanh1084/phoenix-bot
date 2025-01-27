@@ -70,7 +70,7 @@ export async function placeOrder(
     matchLimit: undefined,
     clientOrderId: 0,
     useOnlyDepositedFunds: false,
-    lastValidSlot: undefined,
+    lastValidSlot: (await connection.getSlot()) + 100,
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
