@@ -160,7 +160,7 @@ async function trade(
       console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
     } catch (error: any) {
       console.error(`Error placing order: ${error.message}`);
-      if (error.message.includes("block height exceeded")) {
+      if (error.message.includes("Blockhash not found")) {
         console.log("Retrying transaction with a new blockhash...");
         continue;
       }
@@ -174,12 +174,15 @@ async function trade(
       trader.publicKey
     );
 
-    const { blockhash: cancelBlockhash } =
-      await connection.getRecentBlockhash();
+    const {
+      blockhash: cancelBlockhash,
+      lastValidBlockHeight: cancelLastValidBlockHeight,
+    } = await connection.getLatestBlockhash();
     const cancelTransaction = new Transaction({
-      recentBlockhash: cancelBlockhash,
+      blockhash: cancelBlockhash,
+      lastValidBlockHeight: cancelLastValidBlockHeight,
       feePayer: trader.publicKey,
-    } as TransactionCtorFields).add(cancelAllOrdersTx);
+    }).add(cancelAllOrdersTx);
 
     const cancelAllOrdersTxId = await sendAndConfirmTransaction(
       connection,
