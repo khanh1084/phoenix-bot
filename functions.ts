@@ -174,12 +174,32 @@ export async function checkUserBalance(
       )
     );
   }
+
   if (transaction.instructions.length > 0) {
-    const { blockhash, lastValidBlockHeight } =
-      await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.lastValidBlockHeight = lastValidBlockHeight;
-    await sendAndConfirmTransaction(connection, transaction, [trader]);
+    let retries = 0;
+    while (true) {
+      try {
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.lastValidBlockHeight = lastValidBlockHeight;
+        await sendAndConfirmTransaction(connection, transaction, [trader]);
+        break;
+      } catch (error: any) {
+        if (
+          retries < 3 &&
+          (error.message?.includes("block height exceeded") ||
+            error.message?.includes(
+              "TransactionExpiredBlockheightExceededError"
+            ))
+        ) {
+          retries++;
+          continue;
+        } else {
+          throw error;
+        }
+      }
+    }
   }
 
   const baseBalance = await connection.getTokenAccountBalance(baseAccount);
