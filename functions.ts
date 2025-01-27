@@ -176,35 +176,14 @@ export async function checkUserBalance(
   }
 
   if (transaction.instructions.length > 0) {
-    let retries = 0;
-    while (true) {
-      try {
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.lastValidBlockHeight = lastValidBlockHeight;
-        await sendAndConfirmTransaction(connection, transaction, [trader]);
-        break;
-      } catch (error: any) {
-        // Retry on common rate-limit or blockhash errors
-        if (
-          retries < 3 &&
-          (error.message?.includes("429") ||
-            error.message?.includes("block hash not found") ||
-            error.message?.includes(
-              "TransactionExpiredBlockheightExceededError"
-            ))
-        ) {
-          // Wait a bit before retrying
-          await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * (retries + 1))
-          );
-          retries++;
-          continue;
-        } else {
-          throw error;
-        }
-      }
+    try {
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.lastValidBlockHeight = lastValidBlockHeight;
+      await sendAndConfirmTransaction(connection, transaction, [trader]);
+    } catch (error: any) {
+      throw error;
     }
   }
 
