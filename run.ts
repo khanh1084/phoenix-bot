@@ -177,47 +177,54 @@ async function trade(
     await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
 
     try {
-      let cancelAllOrdersTxId;
-      try {
-        const cancelAllOrdersTx = await cancelAllOrders(
-          marketState,
-          trader.publicKey
-        );
+      const currentOrders = await getCurrentOrders(
+        marketState,
+        trader.publicKey
+      );
+      if (currentOrders.length > 0) {
+        let cancelAllOrdersTxId;
+        try {
+          const cancelAllOrdersTx = await cancelAllOrders(
+            marketState,
+            trader.publicKey
+          );
 
-        const {
-          blockhash: cancelBlockhash,
-          lastValidBlockHeight: cancelLastValidBlockHeight,
-        } = await connection.getLatestBlockhash();
-        const cancelTransaction = new Transaction({
-          blockhash: cancelBlockhash,
-          lastValidBlockHeight: cancelLastValidBlockHeight,
-          feePayer: trader.publicKey,
-        }).add(cancelAllOrdersTx);
+          const {
+            blockhash: cancelBlockhash,
+            lastValidBlockHeight: cancelLastValidBlockHeight,
+          } = await connection.getLatestBlockhash();
+          const cancelTransaction = new Transaction({
+            blockhash: cancelBlockhash,
+            lastValidBlockHeight: cancelLastValidBlockHeight,
+            feePayer: trader.publicKey,
+          }).add(cancelAllOrdersTx);
 
-        cancelAllOrdersTxId = await sendAndConfirmTransaction(
-          connection,
-          cancelTransaction,
-          [trader],
-          {
-            commitment: "confirmed",
-            preflightCommitment: "confirmed",
+          cancelAllOrdersTxId = await sendAndConfirmTransaction(
+            connection,
+            cancelTransaction,
+            [trader],
+            {
+              commitment: "confirmed",
+              preflightCommitment: "confirmed",
+            }
+          );
+          console.log(
+            "All orders canceled. Transaction ID: ",
+            cancelAllOrdersTxId
+          );
+        } catch (error) {
+          if (error instanceof SendTransactionError) {
+            console.error("SendTransactionError:", error.message);
+            console.error("Transaction logs:", await error.getLogs(connection));
+          } else {
+            console.error("Error canceling orders:", error);
           }
-        );
-        console.log(
-          "All orders canceled. Transaction ID: ",
-          cancelAllOrdersTxId
-        );
-        break;
-      } catch (error) {
-        if (error instanceof SendTransactionError) {
-          console.error("SendTransactionError:", error.message);
-          console.error("Transaction logs:", await error.getLogs(connection));
-        } else {
-          console.error("Error canceling orders:", error);
         }
+      } else {
+        console.log("No orders to cancel.");
       }
     } catch (error: any) {
-      console.error(`Error canceling orders: ${error.message}`);
+      console.error(`Error checking orders: ${error.message}`);
     }
   }
 }
