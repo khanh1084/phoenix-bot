@@ -139,22 +139,29 @@ async function trade(
         priceInTicks
       );
 
+      const { blockhash } = await connection.getRecentBlockhash();
+      const transaction = new Transaction({
+        recentBlockhash: blockhash,
+        feePayer: trader.publicKey,
+      }).add(placeOrderTx);
+
       const placeOrderTxId = await sendAndConfirmTransaction(
         connection,
-        new Transaction().add(placeOrderTx),
+        transaction,
         [trader],
         {
           commitment: "confirmed",
           preflightCommitment: "confirmed",
         }
       );
-      console.log(
-        `Order placed. Transaction ID: ${placeOrderTxId}, price: ${priceInTicks}, rsi: ${rsi}, wma: ${wma45}, ema: ${ema9}`
-      );
+
+      console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
     } catch (error: any) {
-      console.error(
-        `Error placing order: ${error.message}, price: ${priceInTicks}, rsi: ${rsi}, wma: ${wma45}, ema: ${ema9}`
-      );
+      console.error(`Error placing order: ${error.message}`);
+      if (error.message.includes("block height exceeded")) {
+        console.log("Retrying transaction with a new blockhash...");
+        continue;
+      }
     }
 
     // Wait for the specified time
@@ -174,7 +181,7 @@ async function trade(
 
     const cancelAllOrdersTxId = await sendAndConfirmTransaction(
       connection,
-      new Transaction().add(cancelAllOrdersTx),
+      cancelTransaction,
       [trader],
       {
         commitment: "confirmed",
