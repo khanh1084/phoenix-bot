@@ -239,7 +239,8 @@ async function main() {
     console.log("Creating Phoenix client... Done");
     console.log("Getting market state...");
     const marketState = await getMarketState(phoenix, "SOL/USDC");
-
+    console.log("Getting market state... Done");
+    console.log("Getting user balance...");
     // Check user balance
     const { baseBalance, quoteBalance } = await checkUserBalance(
       connection,
