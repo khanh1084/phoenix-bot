@@ -244,13 +244,13 @@ async function main() {
     console.log("Getting market state... Done");
     console.log("Getting user balance...");
     // Check user balance
-    // const { baseBalance, quoteBalance } = await checkUserBalance(
-    //   connection,
-    //   marketState,
-    //   trader
-    // );
-    // console.log("Base balance: ", baseBalance);
-    // console.log("Quote balance: ", quoteBalance);
+    const { baseBalance, quoteBalance } = await checkUserBalance(
+      connection,
+      marketState,
+      trader
+    );
+    console.log("Base balance: ", baseBalance);
+    console.log("Quote balance: ", quoteBalance);
 
     const symbol = "SOLUSDC";
     const interval = "5m";
