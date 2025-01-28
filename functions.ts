@@ -136,7 +136,8 @@ export async function getCurrentOrders(
   return orders;
 }
 
-import { TraderState } from "./phoenix-sdk/typescript/phoenix-sdk/src/market";
+import { MarketState } from "./phoenix-sdk/typescript/phoenix-sdk/src/market";
+import { TraderState } from "./phoenix-sdk/typescript/phoenix-sdk/src/utils/beet";
 
 export async function checkUserBalance(
   connection: Connection,
