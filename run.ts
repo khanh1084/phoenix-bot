@@ -137,19 +137,22 @@ async function trade(
     );
 
     // Check if the balance is sufficient
-    const { baseBalance, quoteBalance } = await checkUserBalance(
-      connection,
-      marketState,
-      trader
-    );
+    const {
+      baseWalletBalance,
+      quoteWalletBalance,
+      baseOpenOrdersBalance,
+      quoteOpenOrdersBalance,
+      totalBaseBalance,
+      totalQuoteBalance,
+    } = await checkUserBalance(connection, marketState, trader);
 
-    if (side === Side.Bid && quoteBalance < volume * priceInTicks) {
+    if (side === Side.Bid && quoteWalletBalance < volume * priceInTicks) {
       console.error("Error: Insufficient quote balance to place the order");
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
     }
 
-    if (side === Side.Ask && baseBalance < volume) {
+    if (side === Side.Ask && baseWalletBalance < volume) {
       console.error("Error: Insufficient base balance to place the order");
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
@@ -264,13 +267,21 @@ async function main() {
     console.log("Getting market state... Done");
     console.log("Getting user balance...");
     // Check user balance
-    const { baseBalance, quoteBalance } = await checkUserBalance(
-      connection,
-      marketState,
-      trader
-    );
-    console.log("Base balance: ", baseBalance);
-    console.log("Quote balance: ", quoteBalance);
+    const {
+      baseWalletBalance,
+      quoteWalletBalance,
+      baseOpenOrdersBalance,
+      quoteOpenOrdersBalance,
+      totalBaseBalance,
+      totalQuoteBalance,
+    } = await checkUserBalance(connection, marketState, trader);
+
+    console.log("Base wallet balance: ", baseWalletBalance);
+    console.log("Quote wallet balance: ", quoteWalletBalance);
+    console.log("Base open orders balance: ", baseOpenOrdersBalance);
+    console.log("Quote open orders balance: ", quoteOpenOrdersBalance);
+    console.log("Total base balance: ", totalBaseBalance);
+    console.log("Total quote balance: ", totalQuoteBalance);
 
     const symbol = "SOLUSDC";
     const interval = "5m";
