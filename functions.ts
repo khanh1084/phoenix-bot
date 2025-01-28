@@ -222,15 +222,22 @@ export async function checkUserBalance(
   const quoteLotsFreeInUnits =
     quoteLotsFree / 10 ** marketState.data.header.quoteParams.decimals;
 
+  // Convert base lots to base units
+  const baseLotsLockedInUnits =
+    baseLotsLocked / 10 ** marketState.data.header.baseParams.decimals;
+  const baseLotsFreeInUnits =
+    baseLotsFree / 10 ** marketState.data.header.baseParams.decimals;
+
   // Calculate total balances
-  const totalBaseBalance = baseWalletBalance + baseLotsLocked + baseLotsFree;
+  const totalBaseBalance =
+    baseWalletBalance + baseLotsLockedInUnits + baseLotsFreeInUnits;
   const totalQuoteBalance =
     quoteWalletBalance + quoteLotsLockedInUnits + quoteLotsFreeInUnits;
 
   return {
     baseWalletBalance,
     quoteWalletBalance,
-    baseOpenOrdersBalance: baseLotsLocked + baseLotsFree,
+    baseOpenOrdersBalance: baseLotsLockedInUnits + baseLotsFreeInUnits,
     quoteOpenOrdersBalance: quoteLotsLockedInUnits + quoteLotsFreeInUnits,
     totalBaseBalance,
     totalQuoteBalance,
