@@ -206,14 +206,22 @@ export async function checkUserBalance(
   );
 
   // Get trader state to calculate locked and free balances
-  const traderState: TraderState = await marketState.getTraderState(
-    traderPublicKey
+  const traderState: TraderState | undefined = marketState.data.traders.get(
+    traderPublicKey.toString()
   );
 
+  if (!traderState) {
+    throw new Error(`Trader state not found for ${traderPublicKey.toString()}`);
+  }
+
   const totalBaseBalance =
-    baseBalance + traderState.baseLotsLocked + traderState.baseLotsFree;
+    baseBalance +
+    Number(traderState.baseLotsLocked) +
+    Number(traderState.baseLotsFree);
   const totalQuoteBalance =
-    quoteBalance + traderState.quoteLotsLocked + traderState.quoteLotsFree;
+    quoteBalance +
+    Number(traderState.quoteLotsLocked) +
+    Number(traderState.quoteLotsFree);
 
   return {
     baseBalance: totalBaseBalance,
