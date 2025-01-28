@@ -136,7 +136,7 @@ export async function getCurrentOrders(
   return orders;
 }
 
-import { MarketState, TraderState } from "@ellipsis-labs/phoenix-sdk";
+import { TraderState } from "@ellipsis-labs/phoenix-sdk";
 
 export async function checkUserBalance(
   connection: Connection,
