@@ -142,7 +142,14 @@ export async function checkUserBalance(
   connection: Connection,
   marketState: MarketState,
   trader: Keypair
-): Promise<{ baseBalance: number; quoteBalance: number }> {
+): Promise<{
+  baseWalletBalance: number;
+  quoteWalletBalance: number;
+  baseOpenOrdersBalance: number;
+  quoteOpenOrdersBalance: number;
+  totalBaseBalance: number;
+  totalQuoteBalance: number;
+}> {
   const traderPublicKey = trader.publicKey;
   const baseMint = marketState.data.header.baseParams.mintKey;
   const quoteMint = marketState.data.header.quoteParams.mintKey;
@@ -194,13 +201,13 @@ export async function checkUserBalance(
     quoteAccount
   );
 
-  const baseBalance = parseFloat(
+  const baseWalletBalance = parseFloat(
     (baseBalanceValue.value.uiAmount ?? 0).toFixed(
       marketState.data.header.baseParams.decimals
     )
   );
 
-  const quoteBalance = parseFloat(
+  const quoteWalletBalance = parseFloat(
     (quoteBalanceValue.value.uiAmount ?? 0).toFixed(
       marketState.data.header.quoteParams.decimals
     )
@@ -225,12 +232,23 @@ export async function checkUserBalance(
   const quoteLotsFree =
     Number(traderState.quoteLotsFree) * marketState.data.header.quoteLotSize;
 
+  // Convert quote lots to quote units
+  const quoteLotsLockedInUnits =
+    quoteLotsLocked / 10 ** marketState.data.header.quoteParams.decimals;
+  const quoteLotsFreeInUnits =
+    quoteLotsFree / 10 ** marketState.data.header.quoteParams.decimals;
+
   // Calculate total balances
-  const totalBaseBalance = baseBalance + baseLotsLocked + baseLotsFree;
-  const totalQuoteBalance = quoteBalance + quoteLotsLocked + quoteLotsFree;
+  const totalBaseBalance = baseWalletBalance + baseLotsLocked + baseLotsFree;
+  const totalQuoteBalance =
+    quoteWalletBalance + quoteLotsLockedInUnits + quoteLotsFreeInUnits;
 
   return {
-    baseBalance: totalBaseBalance,
-    quoteBalance: totalQuoteBalance,
+    baseWalletBalance,
+    quoteWalletBalance,
+    baseOpenOrdersBalance: baseLotsLocked + baseLotsFree,
+    quoteOpenOrdersBalance: quoteLotsLockedInUnits + quoteLotsFreeInUnits,
+    totalBaseBalance,
+    totalQuoteBalance,
   };
 }
