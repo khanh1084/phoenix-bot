@@ -197,12 +197,14 @@ export async function checkUserBalance(
   const baseBalance = parseFloat(
     (baseBalanceValue.value.uiAmount ?? 0).toFixed(
       marketState.data.header.baseParams.decimals
-    )
+    ) /
+      10 ** marketState.data.header.baseParams.decimals
   );
   const quoteBalance = parseFloat(
     (quoteBalanceValue.value.uiAmount ?? 0).toFixed(
       marketState.data.header.quoteParams.decimals
-    )
+    ) /
+      10 ** marketState.data.header.quoteParams.decimals
   );
 
   // Get trader state to calculate locked and free balances
