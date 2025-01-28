@@ -192,13 +192,18 @@ export async function checkUserBalance(
     quoteAccount
   );
 
-  const baseBalance =
-    (baseBalanceValue.value.uiAmount ?? 0) /
-    10 ** marketState.data.header.baseParams.decimals;
-  const quoteBalance =
-    (quoteBalanceValue.value.uiAmount ?? 0) /
-    10 ** marketState.data.header.quoteParams.decimals;
-
+  const baseBalance = parseFloat(
+    (
+      (baseBalanceValue.value.uiAmount ?? 0) /
+      10 ** marketState.data.header.baseParams.decimals
+    ).toFixed(marketState.data.header.baseParams.decimals)
+  );
+  const quoteBalance = parseFloat(
+    (
+      (quoteBalanceValue.value.uiAmount ?? 0) /
+      10 ** marketState.data.header.quoteParams.decimals
+    ).toFixed(marketState.data.header.quoteParams.decimals)
+  );
   return {
     baseBalance: baseBalance || 0,
     quoteBalance: quoteBalance || 0,
