@@ -136,6 +136,8 @@ export async function getCurrentOrders(
   return orders;
 }
 
+import { TraderState } from "./phoenix-sdk/typescript/phoenix-sdk/src/market";
+
 export async function checkUserBalance(
   connection: Connection,
   marketState: MarketState,
@@ -202,8 +204,19 @@ export async function checkUserBalance(
       marketState.data.header.quoteParams.decimals
     )
   );
+
+  // Get trader state to calculate locked and free balances
+  const traderState: TraderState = await marketState.getTraderState(
+    traderPublicKey
+  );
+
+  const totalBaseBalance =
+    baseBalance + traderState.baseLotsLocked + traderState.baseLotsFree;
+  const totalQuoteBalance =
+    quoteBalance + traderState.quoteLotsLocked + traderState.quoteLotsFree;
+
   return {
-    baseBalance: baseBalance || 0,
-    quoteBalance: quoteBalance || 0,
+    baseBalance: totalBaseBalance,
+    quoteBalance: totalQuoteBalance,
   };
 }
