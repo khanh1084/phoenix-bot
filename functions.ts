@@ -46,22 +46,6 @@ export async function placeOrder(
 ): Promise<TransactionInstruction> {
   const traderPublicKey = trader.publicKey;
 
-  // Check user balance
-  const { baseBalance, quoteBalance } = await checkUserBalance(
-    connection,
-    marketState,
-    trader
-  );
-
-  // Check if the trader has sufficient balance
-  const requiredBalance = numBaseLots * priceInTicks;
-  if (side === Phoenix.Side.Bid && quoteBalance < requiredBalance) {
-    throw new Error("Insufficient quote balance to place the order");
-  }
-  if (side === Phoenix.Side.Ask && baseBalance < numBaseLots) {
-    throw new Error("Insufficient base balance to place the order");
-  }
-
   const orderPacket = Phoenix.getLimitOrderPacket({
     side,
     priceInTicks,
