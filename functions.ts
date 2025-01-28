@@ -194,21 +194,17 @@ export async function checkUserBalance(
     quoteAccount
   );
 
-  const baseBalance =
-    parseFloat(
-      (baseBalanceValue.value.uiAmount ?? 0).toFixed(
-        marketState.data.header.baseParams.decimals
-      )
-    ) /
-    10 ** marketState.data.header.baseParams.decimals;
+  const baseBalance = parseFloat(
+    (baseBalanceValue.value.uiAmount ?? 0).toFixed(
+      marketState.data.header.baseParams.decimals
+    )
+  );
 
-  const quoteBalance =
-    parseFloat(
-      (quoteBalanceValue.value.uiAmount ?? 0).toFixed(
-        marketState.data.header.quoteParams.decimals
-      )
-    ) /
-    10 ** marketState.data.header.quoteParams.decimals;
+  const quoteBalance = parseFloat(
+    (quoteBalanceValue.value.uiAmount ?? 0).toFixed(
+      marketState.data.header.quoteParams.decimals
+    )
+  );
 
   // Get trader state to calculate locked and free balances
   const traderState: TraderState | undefined = marketState.data.traders.get(
@@ -219,14 +215,19 @@ export async function checkUserBalance(
     throw new Error(`Trader state not found for ${traderPublicKey.toString()}`);
   }
 
-  const totalBaseBalance =
-    baseBalance +
-    Number(traderState.baseLotsLocked) +
-    Number(traderState.baseLotsFree);
-  const totalQuoteBalance =
-    quoteBalance +
-    Number(traderState.quoteLotsLocked) +
-    Number(traderState.quoteLotsFree);
+  // Convert locked and free balances to their respective units
+  const baseLotsLocked =
+    Number(traderState.baseLotsLocked) * marketState.data.header.baseLotSize;
+  const baseLotsFree =
+    Number(traderState.baseLotsFree) * marketState.data.header.baseLotSize;
+  const quoteLotsLocked =
+    Number(traderState.quoteLotsLocked) * marketState.data.header.quoteLotSize;
+  const quoteLotsFree =
+    Number(traderState.quoteLotsFree) * marketState.data.header.quoteLotSize;
+
+  // Calculate total balances
+  const totalBaseBalance = baseBalance + baseLotsLocked + baseLotsFree;
+  const totalQuoteBalance = quoteBalance + quoteLotsLocked + quoteLotsFree;
 
   return {
     baseBalance: totalBaseBalance,
