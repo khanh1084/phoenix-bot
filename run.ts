@@ -172,12 +172,13 @@ async function trade(
     // }
 
     try {
+      console.log(`Placing order with side: ${side}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
       const placeOrderTx = await placeOrder(
         connection,
         marketState,
         trader,
         side,
-        volume,
+        numBaseLots,
         priceInTicks
       );
 
