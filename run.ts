@@ -136,6 +136,7 @@ async function trade(
     const quoteAtoms = volume * priceInTicks * 10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
+    console.log(`numBaseLots: ${numBaseLots}, numQuoteLots: ${numQuoteLots}`);
 
     // Ensure either numBaseLots or numQuoteLots is nonzero
     if (numBaseLots === 0 && numQuoteLots === 0) {
