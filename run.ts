@@ -144,10 +144,6 @@ async function trade(
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
     }
-    
-    console.log(
-      `Placing ${Side[side]} order for ${volume} lots at ${priceInTicks}`
-    );
 
     // Check if the balance is sufficient
     const {
@@ -172,13 +168,14 @@ async function trade(
     }
 
     try {
-      console.log(`Placing order with side: ${side}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
+      console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
+      const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
       const placeOrderTx = await placeOrder(
         connection,
         marketState,
         trader,
         side,
-        numBaseLots,
+        lots,
         priceInTicks
       );
 
