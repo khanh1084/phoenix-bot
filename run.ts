@@ -129,9 +129,21 @@ async function trade(
     //     }
     //   }
     // }
-
+    
     side = Side.Bid;
     priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
+    const baseAtoms = volume * 10 ** marketState.data.header.baseParams.decimals;
+    const quoteAtoms = volume * priceInTicks * 10 ** marketState.data.header.quoteParams.decimals;
+    const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
+    const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
+
+    // Ensure either numBaseLots or numQuoteLots is nonzero
+    if (numBaseLots === 0 && numQuoteLots === 0) {
+      console.error("Either numBaseLots or numQuoteLots must be nonzero.");
+      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+      continue;
+    }
+    
     console.log(
       `Placing ${Side[side]} order for ${volume} lots at ${priceInTicks}`
     );
