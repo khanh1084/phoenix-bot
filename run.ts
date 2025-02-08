@@ -65,73 +65,73 @@ async function trade(
     const currentPrice = priceStream;
 
     // Always place limit orders based on the current price and percentage
-    if (rsi > 75) {
-      console.log(`RSI is above 75. Placing SELL limit order for ${pair}.`);
-      side = Side.Ask;
-      priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
-    } else if (rsi < 25) {
-      console.log(`RSI is below 25. Placing BUY limit order for ${pair}.`);
-      side = Side.Bid;
-      priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
-    } else {
-      if (sideway) {
-        if (rsi >= Math.min(wma45, ema9) && rsi <= Math.max(wma45, ema9)) {
-          console.log(`RSI is within the sideway range, ${pair}.`);
-          if (wma45 < config.WMAlimitBuy) {
-            console.log(
-              `WMA45 is below the buy limit. Placing BUY limit order for ${pair}.\n`
-            );
-            side = Side.Bid;
-            priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
-          } else {
-            console.log(
-              `WMA45 is not below the buy limit. No BUY limit order placed for ${pair}.\n`
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, timeCancel * 1000)
-            );
-            continue;
-          }
-        } else if (rsi > Math.max(wma45, ema9) && wma45 > config.WMAlimitSell) {
-          console.log(
-            `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL limit order for ${pair}.\n`
-          );
-          side = Side.Ask;
-          priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
-        } else {
-          console.log(
-            `RSI is not within the sideway range and no conditions met for placing orders for ${pair}.\n`
-          );
-          await new Promise((resolve) =>
-            setTimeout(resolve, timeCancel * 1000)
-          );
-          continue;
-        }
-      } else {
-        if (wma45 < config.WMAlimitBuy && rsi < wma45) {
-          console.log(
-            `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY limit order for ${pair}.\n`
-          );
-          side = Side.Bid;
-          priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
-        } else if (wma45 > config.WMAlimitSell && rsi > wma45) {
-          console.log(
-            `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL limit order for ${pair}.\n`
-          );
-          side = Side.Ask;
-          priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
-        } else {
-          console.log(`No conditions met for placing orders, ${pair}.\n`);
-          await new Promise((resolve) =>
-            setTimeout(resolve, timeCancel * 1000)
-          );
-          continue;
-        }
-      }
-    }
+    // if (rsi > 75) {
+    //   console.log(`RSI is above 75. Placing SELL limit order for ${pair}.`);
+    //   side = Side.Ask;
+    //   priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
+    // } else if (rsi < 25) {
+    //   console.log(`RSI is below 25. Placing BUY limit order for ${pair}.`);
+    //   side = Side.Bid;
+    //   priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
+    // } else {
+    //   if (sideway) {
+    //     if (rsi >= Math.min(wma45, ema9) && rsi <= Math.max(wma45, ema9)) {
+    //       console.log(`RSI is within the sideway range, ${pair}.`);
+    //       if (wma45 < config.WMAlimitBuy) {
+    //         console.log(
+    //           `WMA45 is below the buy limit. Placing BUY limit order for ${pair}.\n`
+    //         );
+    //         side = Side.Bid;
+    //         priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
+    //       } else {
+    //         console.log(
+    //           `WMA45 is not below the buy limit. No BUY limit order placed for ${pair}.\n`
+    //         );
+    //         await new Promise((resolve) =>
+    //           setTimeout(resolve, timeCancel * 1000)
+    //         );
+    //         continue;
+    //       }
+    //     } else if (rsi > Math.max(wma45, ema9) && wma45 > config.WMAlimitSell) {
+    //       console.log(
+    //         `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL limit order for ${pair}.\n`
+    //       );
+    //       side = Side.Ask;
+    //       priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
+    //     } else {
+    //       console.log(
+    //         `RSI is not within the sideway range and no conditions met for placing orders for ${pair}.\n`
+    //       );
+    //       await new Promise((resolve) =>
+    //         setTimeout(resolve, timeCancel * 1000)
+    //       );
+    //       continue;
+    //     }
+    //   } else {
+    //     if (wma45 < config.WMAlimitBuy && rsi < wma45) {
+    //       console.log(
+    //         `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY limit order for ${pair}.\n`
+    //       );
+    //       side = Side.Bid;
+    //       priceInTicks = Math.round(currentPrice * (1 - percentage / 100));
+    //     } else if (wma45 > config.WMAlimitSell && rsi > wma45) {
+    //       console.log(
+    //         `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL limit order for ${pair}.\n`
+    //       );
+    //       side = Side.Ask;
+    //       priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
+    //     } else {
+    //       console.log(`No conditions met for placing orders, ${pair}.\n`);
+    //       await new Promise((resolve) =>
+    //         setTimeout(resolve, timeCancel * 1000)
+    //       );
+    //       continue;
+    //     }
+    //   }
+    // }
 
-    // side = Side.Bid;
-    // priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
+    side = Side.Bid;
+    priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
     console.log(
       `Placing ${Side[side]} order for ${volume} lots at ${priceInTicks}`
     );
@@ -152,11 +152,11 @@ async function trade(
       continue;
     }
 
-    if (side === Side.Ask && baseWalletBalance < volume) {
-      console.error("Error: Insufficient base balance to place the order");
-      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-      continue;
-    }
+    // if (side === Side.Ask && baseWalletBalance < volume) {
+    //   console.error("Error: Insufficient base balance to place the order");
+    //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+    //   continue;
+    // }
 
     try {
       const placeOrderTx = await placeOrder(
