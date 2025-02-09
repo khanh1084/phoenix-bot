@@ -138,10 +138,7 @@ export async function checkUserBalance(
   const baseMint = marketState.data.header.baseParams.mintKey;
   const quoteMint = marketState.data.header.quoteParams.mintKey;
   const baseAccount = getAssociatedTokenAddressSync(baseMint, traderPublicKey);
-  const quoteAccount = getAssociatedTokenAddressSync(
-    quoteMint,
-    traderPublicKey
-  );
+  const quoteAccount = getAssociatedTokenAddressSync(quoteMint, traderPublicKey);
 
   // Create associated token accounts if they do not exist
   const transaction = new Transaction();
@@ -156,6 +153,7 @@ export async function checkUserBalance(
       )
     );
   }
+
   const quoteAccountInfo = await connection.getAccountInfo(quoteAccount);
   if (!quoteAccountInfo) {
     transaction.add(
@@ -181,9 +179,7 @@ export async function checkUserBalance(
   }
 
   const baseBalanceValue = await connection.getTokenAccountBalance(baseAccount);
-  const quoteBalanceValue = await connection.getTokenAccountBalance(
-    quoteAccount
-  );
+  const quoteBalanceValue = await connection.getTokenAccountBalance(quoteAccount);
 
   const baseWalletBalance = parseFloat(
     (baseBalanceValue.value.uiAmount ?? 0).toFixed(
