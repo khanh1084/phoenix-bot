@@ -221,16 +221,16 @@ async function trade(
     console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
 
 
-    // if (side === Side.Bid && quoteWalletBalance < volume * priceInTicks) {
+    // if (side === Side.Bid && quoteWalletBalance < volume) {
     //   console.error("Error: Insufficient quote balance to place the order");
-    //   console.log(`Wallet quote balance: ${quoteWalletBalance}, volume * priceInTicks: ${volume * priceInTicks}`);
+    //   console.log(`Wallet quote balance: ${quoteWalletBalance}, volume: ${volume}`);
     //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
     //   continue;
     // }
 
-    if (side === Side.Ask && baseWalletBalance < volume) {
+    if (side === Side.Ask && baseWalletBalance < volume / currentPrice) {
       console.error("Error: Insufficient base balance to place the order");
-      console.log(`Wallet base balance: ${baseWalletBalance}, volume: ${volume}`);
+      console.log(`Wallet base balance: ${baseWalletBalance}, volume: ${volume / currentPrice}`);
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
     }
