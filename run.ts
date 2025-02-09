@@ -193,7 +193,7 @@ async function trade(
     //   }
     // }
     
-    side = Side.Ask;
+    side = Side.Bid;
     priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
     const baseAtoms = parseFloat((volume / currentPrice).toFixed(8))* 10 ** marketState.data.header.baseParams.decimals;
     const quoteAtoms = volume * 10 ** marketState.data.header.quoteParams.decimals;
@@ -220,23 +220,24 @@ async function trade(
 
     console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
 
-    // if (side === Side.Bid && quoteWalletBalance < volume) {
-    //   console.error("Error: Insufficient quote balance to place the order");
-    //   console.log(`Wallet quote balance: ${quoteWalletBalance}, volume: ${volume}`);
-    //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-    //   continue;
-    // }
-
-    const volumeInBase = (volume / currentPrice).toFixed(8);
-    if (side === Side.Ask && baseWalletBalance < parseFloat(volumeInBase)) {
-      console.error("Error: Insufficient base balance to place the order");
-      console.log(`Wallet base balance: ${baseWalletBalance}, volume in base: ${volumeInBase}`);
+    if (side === Side.Bid && quoteWalletBalance < volume) {
+      console.error("Error: Insufficient quote balance to place the order");
+      console.log(`Wallet quote balance: ${quoteWalletBalance}, volume: ${volume}`);
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
     }
 
+    // const volumeInBase = (volume / currentPrice).toFixed(8);
+    // if (side === Side.Ask && baseWalletBalance < parseFloat(volumeInBase)) {
+    //   console.error("Error: Insufficient base balance to place the order");
+    //   console.log(`Wallet base balance: ${baseWalletBalance}, volume in base: ${volumeInBase}`);
+    //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+    //   continue;
+    // }
+
     try {
-      const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
+      // const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
+      const lots = numBaseLots;
       const placeOrderTx = await placeOrder(
         connection,
         marketState,
