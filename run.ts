@@ -227,9 +227,10 @@ async function trade(
     //   continue;
     // }
 
-    if (side === Side.Ask && baseWalletBalance < volume / currentPrice) {
+    const volumeInBase = volume / currentPrice;
+    if (side === Side.Ask && baseWalletBalance < volumeInBase) {
       console.error("Error: Insufficient base balance to place the order");
-      console.log(`Wallet base balance: ${baseWalletBalance}, volume: ${volume / currentPrice}`);
+      console.log(`Wallet base balance: ${baseWalletBalance}, volume in base: ${volumeInBase}`);
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
     }
