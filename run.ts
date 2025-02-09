@@ -131,7 +131,7 @@ async function trade(
     //   }
     // }
     
-    side = Side.Bid;
+    side = Side.Ask;
     priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
     const baseAtoms = volume * 10 ** marketState.data.header.baseParams.decimals;
     const quoteAtoms = volume * priceInTicks * 10 ** marketState.data.header.quoteParams.decimals;
@@ -159,23 +159,23 @@ async function trade(
     console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
 
 
-    if (side === Side.Bid && quoteWalletBalance < volume * priceInTicks) {
-      console.error("Error: Insufficient quote balance to place the order");
-      console.log(`quoteWalletBalance: ${quoteWalletBalance}, volume * priceInTicks: ${volume * priceInTicks}`);
-      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-      continue;
-    }
-
-    // if (side === Side.Ask && baseWalletBalance < volume) {
-    //   console.error("Error: Insufficient base balance to place the order");
-    //   console.log(`baseWalletBalance: ${baseWalletBalance}, volume: ${volume}`);
+    // if (side === Side.Bid && quoteWalletBalance < volume * priceInTicks) {
+    //   console.error("Error: Insufficient quote balance to place the order");
+    //   console.log(`quoteWalletBalance: ${quoteWalletBalance}, volume * priceInTicks: ${volume * priceInTicks}`);
     //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
     //   continue;
     // }
 
+    if (side === Side.Ask && baseWalletBalance < volume) {
+      console.error("Error: Insufficient base balance to place the order");
+      console.log(`baseWalletBalance: ${baseWalletBalance}, volume: ${volume}`);
+      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+      continue;
+    }
+
     try {
       // const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
-      const lots = numBaseLots;
+      const lots = numQuoteLots;
       const placeOrderTx = await placeOrder(
         connection,
         marketState,
