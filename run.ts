@@ -155,6 +155,9 @@ async function trade(
       totalQuoteBalance,
     } = await checkUserBalance(connection, marketState, trader);
 
+    console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
+
+
     if (side === Side.Bid && quoteWalletBalance < volume * priceInTicks) {
       console.error("Error: Insufficient quote balance to place the order");
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
@@ -168,7 +171,6 @@ async function trade(
     }
 
     try {
-      console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
       const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
       const placeOrderTx = await placeOrder(
         connection,
