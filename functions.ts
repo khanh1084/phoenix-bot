@@ -69,7 +69,7 @@ export async function cancelAllOrders(
   marketState: MarketState,
   traderPublicKey: PublicKey
 ): Promise<TransactionInstruction> {
-  return marketState.createCancelAllOrdersInstruction(traderPublicKey);
+  return marketState.createCancelAllOrdersWithFreeFundsInstruction(traderPublicKey);
 }
 
 export async function getCurrentPrice(
