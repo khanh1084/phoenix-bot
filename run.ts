@@ -5,6 +5,7 @@ import {
   sendAndConfirmTransaction,
   Transaction,
   TransactionCtorFields,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import base58 from "bs58";
 import {
@@ -252,7 +253,13 @@ async function trade(
         blockhash,
         lastValidBlockHeight,
         feePayer: trader.publicKey,
-      }).add(placeOrderTx);
+      })
+      .add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 300000, // Increase the limit as needed
+        })
+      )
+      .add(placeOrderTx);
 
       const placeOrderTxId = await sendAndConfirmTransaction(
         connection,
