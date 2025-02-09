@@ -224,18 +224,26 @@ export async function checkUserBalance(
   const baseLotsFreeInUnits =
     baseLotsFree / 10 ** marketState.data.header.baseParams.decimals;
 
-  // Calculate total balances
-  const totalBaseBalance =
-    baseWalletBalance + baseLotsLockedInUnits + baseLotsFreeInUnits;
-  const totalQuoteBalance =
+  // Get current price of base token in USD
+  const currentPrice = await getCurrentPrice(marketState);
+
+  // Convert base balances to USD
+  const baseWalletBalanceInUSD = baseWalletBalance * currentPrice;
+  const baseLotsLockedInUSD = baseLotsLockedInUnits * currentPrice;
+  const baseLotsFreeInUSD = baseLotsFreeInUnits * currentPrice;
+
+  // Calculate total balances in USD
+  const totalBaseBalanceInUSD =
+    baseWalletBalanceInUSD + baseLotsLockedInUSD + baseLotsFreeInUSD;
+  const totalQuoteBalanceInUSD =
     quoteWalletBalance + quoteLotsLockedInUnits + quoteLotsFreeInUnits;
 
   return {
-    baseWalletBalance,
+    baseWalletBalance: baseWalletBalanceInUSD,
     quoteWalletBalance,
-    baseOpenOrdersBalance: baseLotsLockedInUnits + baseLotsFreeInUnits,
+    baseOpenOrdersBalance: baseLotsLockedInUSD + baseLotsFreeInUSD,
     quoteOpenOrdersBalance: quoteLotsLockedInUnits + quoteLotsFreeInUnits,
-    totalBaseBalance,
-    totalQuoteBalance,
+    totalBaseBalance: totalBaseBalanceInUSD,
+    totalQuoteBalance: totalQuoteBalanceInUSD,
   };
 }
