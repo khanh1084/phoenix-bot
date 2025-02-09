@@ -222,48 +222,48 @@ async function trade(
         trader.publicKey
       );
       console.log("Current orders:", currentOrders);
-      // if (currentOrders.length > 0) {
-      //   let cancelAllOrdersTxId;
-      //   try {
-      //     const cancelAllOrdersTx = await cancelAllOrders(
-      //       marketState,
-      //       trader.publicKey
-      //     );
+      if (currentOrders.length > 0) {
+        let cancelAllOrdersTxId;
+        try {
+          const cancelAllOrdersTx = await cancelAllOrders(
+            marketState,
+            trader.publicKey
+          );
 
-      //     const {
-      //       blockhash: cancelBlockhash,
-      //       lastValidBlockHeight: cancelLastValidBlockHeight,
-      //     } = await connection.getLatestBlockhash();
-      //     const cancelTransaction = new Transaction({
-      //       blockhash: cancelBlockhash,
-      //       lastValidBlockHeight: cancelLastValidBlockHeight,
-      //       feePayer: trader.publicKey,
-      //     }).add(cancelAllOrdersTx);
+          const {
+            blockhash: cancelBlockhash,
+            lastValidBlockHeight: cancelLastValidBlockHeight,
+          } = await connection.getLatestBlockhash();
+          const cancelTransaction = new Transaction({
+            blockhash: cancelBlockhash,
+            lastValidBlockHeight: cancelLastValidBlockHeight,
+            feePayer: trader.publicKey,
+          }).add(cancelAllOrdersTx);
 
-      //     cancelAllOrdersTxId = await sendAndConfirmTransaction(
-      //       connection,
-      //       cancelTransaction,
-      //       [trader],
-      //       {
-      //         commitment: "confirmed",
-      //         preflightCommitment: "confirmed",
-      //       }
-      //     );
-      //     console.log(
-      //       "All orders canceled. Transaction ID: ",
-      //       cancelAllOrdersTxId
-      //     );
-      //   } catch (error) {
-      //     if (error instanceof SendTransactionError) {
-      //       console.error("SendTransactionError:", error.message);
-      //       console.error("Transaction logs:", await error.getLogs(connection));
-      //     } else {
-      //       console.error("Error canceling orders:", error);
-      //     }
-      //   }
-      // } else {
-      //   console.log("No orders to cancel.");
-      // }
+          cancelAllOrdersTxId = await sendAndConfirmTransaction(
+            connection,
+            cancelTransaction,
+            [trader],
+            {
+              commitment: "confirmed",
+              preflightCommitment: "confirmed",
+            }
+          );
+          console.log(
+            "All orders canceled. Transaction ID: ",
+            cancelAllOrdersTxId
+          );
+        } catch (error) {
+          if (error instanceof SendTransactionError) {
+            console.error("SendTransactionError:", error.message);
+            console.error("Transaction logs:", await error.getLogs(connection));
+          } else {
+            console.error("Error canceling orders:", error);
+          }
+        }
+      } else {
+        console.log("No orders to cancel.");
+      }
     } catch (error: any) {
       console.error(`Error checking orders: ${error.message}`);
     }
