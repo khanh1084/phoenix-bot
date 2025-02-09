@@ -195,7 +195,7 @@ async function trade(
     
     side = Side.Ask;
     priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
-    const baseAtoms = (volume / currentPrice) * 10 ** marketState.data.header.baseParams.decimals;
+    const baseAtoms = parseFloat((volume / currentPrice).toFixed(8))* 10 ** marketState.data.header.baseParams.decimals;
     const quoteAtoms = volume * 10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
