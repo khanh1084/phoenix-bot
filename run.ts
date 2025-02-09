@@ -39,11 +39,6 @@ async function trade(
   timeCancel: number
 ) {
   while (true) {
-    const currentOrders = await getCurrentOrders(
-        marketState,
-        trader.publicKey
-      );
-      console.log("Current orders:", currentOrders);
     const {
       rsi,
       wma: wma45,
