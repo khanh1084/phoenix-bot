@@ -89,8 +89,13 @@ export async function getCurrentOrders(
   const asks = marketState.data.asks;
   const orders: Phoenix.L3Order[] = [];
 
+  const traderIndex = marketState.data.traderPubkeyToTraderIndex.get(traderPublicKey.toString());
+  if (traderIndex === undefined) {
+    throw new Error(`Trader index not found for ${traderPublicKey.toString()}`);
+  }
+
   for (const [orderId, order] of bids) {
-    if (order.traderIndex.toString() === traderPublicKey.toString()) {
+    if (order.traderIndex.toString() === traderIndex.toString()) {
       orders.push({
         priceInTicks: orderId.priceInTicks,
         side: Phoenix.Side.Bid,
@@ -104,7 +109,7 @@ export async function getCurrentOrders(
   }
 
   for (const [orderId, order] of asks) {
-    if (order.traderIndex.toString() === traderPublicKey.toString()) {
+    if (order.traderIndex.toString() === traderIndex.toString()) {
       orders.push({
         priceInTicks: orderId.priceInTicks,
         side: Phoenix.Side.Ask,
@@ -239,11 +244,11 @@ export async function checkUserBalance(
     quoteWalletBalance + quoteLotsLockedInUnits + quoteLotsFreeInUnits;
 
   return {
-    baseWalletBalance: baseWalletBalanceInUSD,
-    quoteWalletBalance,
-    baseOpenOrdersBalance: baseLotsLockedInUSD + baseLotsFreeInUSD,
-    quoteOpenOrdersBalance: quoteLotsLockedInUnits + quoteLotsFreeInUnits,
-    totalBaseBalance: totalBaseBalanceInUSD,
-    totalQuoteBalance: totalQuoteBalanceInUSD,
+    baseWalletBalance: parseFloat(baseWalletBalance.toFixed(8)),
+    quoteWalletBalance: parseFloat(quoteWalletBalance.toFixed(8)),
+    baseOpenOrdersBalance: parseFloat((baseLotsLockedInUSD + baseLotsFreeInUSD).toFixed(8)),
+    quoteOpenOrdersBalance: parseFloat((quoteLotsLockedInUnits + quoteLotsFreeInUnits).toFixed(8)),
+    totalBaseBalance: parseFloat(totalBaseBalanceInUSD.toFixed(8)),
+    totalQuoteBalance: parseFloat(totalQuoteBalanceInUSD.toFixed(8)),
   };
 }
