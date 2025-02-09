@@ -282,6 +282,12 @@ async function trade(
       }
     }
 
+    const currentOrders = await getCurrentOrders(
+        marketState,
+        trader.publicKey
+      );
+      console.log("Current orders:", currentOrders.length);
+
     // Wait for the specified time
     await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
   }
