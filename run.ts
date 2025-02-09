@@ -195,8 +195,8 @@ async function trade(
     
     side = Side.Ask;
     priceInTicks = Math.round(currentPrice * (1 + percentage / 100));
-    const baseAtoms = volume * 10 ** marketState.data.header.baseParams.decimals;
-    const quoteAtoms = volume * priceInTicks * 10 ** marketState.data.header.quoteParams.decimals;
+    const baseAtoms = (volume / currentPrice) * 10 ** marketState.data.header.baseParams.decimals;
+    const quoteAtoms = volume * 10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
     console.log(`numBaseLots: ${numBaseLots}, numQuoteLots: ${numQuoteLots}`);
@@ -220,7 +220,6 @@ async function trade(
 
     console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
 
-
     // if (side === Side.Bid && quoteWalletBalance < volume) {
     //   console.error("Error: Insufficient quote balance to place the order");
     //   console.log(`Wallet quote balance: ${quoteWalletBalance}, volume: ${volume}`);
@@ -237,7 +236,6 @@ async function trade(
 
     try {
       const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
-      // const lots = numQuoteLots;
       const placeOrderTx = await placeOrder(
         connection,
         marketState,
