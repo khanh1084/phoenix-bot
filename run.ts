@@ -256,7 +256,7 @@ async function trade(
       })
       .add(
         ComputeBudgetProgram.setComputeUnitLimit({
-          units: 300000, // Increase the limit as needed
+          units: 500000, // Increase the limit as needed
         })
       )
       .add(placeOrderTx);
