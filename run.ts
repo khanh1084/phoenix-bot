@@ -44,21 +44,21 @@ async function trade(
       wma: wma45,
       ema: ema9,
     } = await calculateIndicators(marketState);
-    // console.log(
-    //   `\nRSI: ${rsi}, WMA45: ${wma45}, EMA9: ${ema9}, Time: ${new Date().toLocaleString()}, Pair: ${pair}`
-    // );
-    // console.log(
-    //   `WMAlimitSell: ${config.WMAlimitSell}, WMAlimitBuy: ${config.WMAlimitBuy}`
-    // );
+    console.log(
+      `\nRSI: ${rsi}, WMA45: ${wma45}, EMA9: ${ema9}, Time: ${new Date().toLocaleString()}, Pair: ${pair}`
+    );
+    console.log(
+      `WMAlimitSell: ${config.WMAlimitSell}, WMAlimitBuy: ${config.WMAlimitBuy}`
+    );
 
-    // // Check if indicators are valid
-    // if (isNaN(rsi) || isNaN(wma45) || isNaN(ema9)) {
-    //   console.log(
-    //     "Not enough data to calculate indicators. Skipping this iteration."
-    //   );
-    //   await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
-    //   continue;
-    // }
+    // Check if indicators are valid
+    if (isNaN(rsi) || isNaN(wma45) || isNaN(ema9)) {
+      console.log(
+        "Not enough data to calculate indicators. Skipping this iteration."
+      );
+      await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
+      continue;
+    }
 
     let side: Side;
     let priceInTicks: number;
@@ -161,12 +161,14 @@ async function trade(
 
     if (side === Side.Bid && quoteWalletBalance < volume * priceInTicks) {
       console.error("Error: Insufficient quote balance to place the order");
+      console.log(`quoteWalletBalance: ${quoteWalletBalance}, volume * priceInTicks: ${volume * priceInTicks}`);
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
     }
 
     // if (side === Side.Ask && baseWalletBalance < volume) {
     //   console.error("Error: Insufficient base balance to place the order");
+    //   console.log(`baseWalletBalance: ${baseWalletBalance}, volume: ${volume}`);
     //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
     //   continue;
     // }
