@@ -202,7 +202,7 @@ async function trade(
     console.log(`numBaseLots: ${numBaseLots}, numQuoteLots: ${numQuoteLots}`);
 
     // Ensure either numBaseLots or numQuoteLots is nonzero
-    if (numBaseLots === 0 && numQuoteLots === 0) {
+    if (numBaseLots == 0 && numQuoteLots == 0) {
       console.error("Either numBaseLots or numQuoteLots must be nonzero.");
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
