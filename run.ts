@@ -196,7 +196,7 @@ async function trade(
     side = Side.Ask;
     priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); // Sử dụng hàm floatPriceToTicks
     console.log(`currentPrice: ${currentPrice}, priceInTicks: ${priceInTicks}`);
-    const baseAtoms = parseFloat((volume / currentPrice).toFixed(8))* 10 ** marketState.data.header.baseParams.decimals;
+    const baseAtoms = parseFloat((volume / currentPrice).toFixed(8)) * 10 ** marketState.data.header.baseParams.decimals;
     const quoteAtoms = volume * 10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
@@ -221,17 +221,16 @@ async function trade(
 
     console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
 
-    // if (side === Side.Bid && quoteWalletBalance < volume) {
+    // if (side === Side.Bid && quoteWalletBalance < numQuoteLots) {
     //   console.error("Error: Insufficient quote balance to place the order");
-    //   console.log(`Wallet quote balance: ${quoteWalletBalance}, volume: ${volume}`);
+    //   console.log(`Wallet quote balance: ${quoteWalletBalance}, required: ${numQuoteLots}`);
     //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
     //   continue;
     // }
 
-    const volumeInBase = (volume / currentPrice).toFixed(8);
-    if (side === Side.Ask && baseWalletBalance < parseFloat(volumeInBase)) {
+    if (side === Side.Ask && baseWalletBalance < numBaseLots) {
       console.error("Error: Insufficient base balance to place the order");
-      console.log(`Wallet base balance: ${baseWalletBalance}, volume in base: ${volumeInBase}`);
+      console.log(`Wallet base balance: ${baseWalletBalance}, required: ${numBaseLots}`);
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
     }
