@@ -253,6 +253,16 @@ async function trade(
             "All orders canceled. Transaction ID: ",
             cancelAllOrdersTxId
           );
+
+          // Verify that all orders are canceled
+          const updatedOrders = await getCurrentOrders(
+            marketState,
+            trader.publicKey
+          );
+          console.log("Updated orders after cancel:", updatedOrders);
+          if (updatedOrders.length > 0) {
+            console.error("Error: Some orders were not canceled.");
+          }
         } catch (error) {
           if (error instanceof SendTransactionError) {
             console.error("SendTransactionError:", error.message);
