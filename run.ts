@@ -223,11 +223,13 @@ async function trade(
     console.log(`solBalance: ${solBalance}, baseWalletBalance: ${baseWalletBalance}, quoteWalletBalance: ${quoteWalletBalance}`);
     console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
 
-    // if (side === Side.Bid && quoteWalletBalance < numQuoteLots) {
+    // if (side === Side.Bid) {
+    //   const requiredQuoteUnits = numQuoteLots * marketState.data.header.quoteLotSize;
+    //   const requiredQuoteBalance = requiredQuoteUnits / 10 ** marketState.data.header.quoteParams.decimals;
+    //   if (quoteWalletBalance < requiredQuoteBalance) {
     //   console.error("Error: Insufficient quote balance to place the order");
-    //   console.log(`Wallet quote balance: ${quoteWalletBalance}, required: ${numQuoteLots}`);
-    //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-    //   continue;
+    //   console.log(`Wallet quote balance: ${quoteWalletBalance}, required: ${requiredQuoteBalance}`);
+    //   }
     // }
 
     if (side === Side.Ask) {
@@ -252,11 +254,11 @@ async function trade(
         } else {
           console.error("Error: Insufficient SOL to wrap into wSOL");
           console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
-          await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-          continue;
-        }
+                  await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+        continue;
       }
     }
+  }
 
     try {
       const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
