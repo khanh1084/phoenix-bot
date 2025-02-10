@@ -58,7 +58,7 @@ export async function placeOrder(
     selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
     matchLimit: undefined,
     clientOrderId: 0,
-    useOnlyDepositedFunds: false,
+    useOnlyDepositedFunds: true,
     lastValidSlot: (await connection.getSlot()) + 100,
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
