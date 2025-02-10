@@ -220,7 +220,7 @@ async function trade(
       totalBaseBalance,
       totalQuoteBalance,
     } = await checkUserBalance(connection, marketState, trader);
-
+    console.log(`solBalance: ${solBalance}, baseWalletBalance: ${baseWalletBalance}, quoteWalletBalance: ${quoteWalletBalance}`);
     console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
 
     // if (side === Side.Bid && quoteWalletBalance < numQuoteLots) {

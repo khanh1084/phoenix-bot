@@ -64,10 +64,12 @@ export async function placeOrder(
     failSilientlyOnInsufficientFunds: false,
   });
 
-  return marketState.createPlaceLimitOrderInstruction(
-    orderPacket,
-    traderPublicKey
-  );
+  try {
+    return marketState.createPlaceLimitOrderInstruction(orderPacket, traderPublicKey);
+  } catch (error) {
+    console.error("Error creating place limit order instruction:", error);
+    throw error;
+  }
 }
 
 export async function cancelAllOrders(
@@ -203,15 +205,8 @@ export async function checkUserBalance(
   const solBalanceLamports = await connection.getBalance(traderPublicKey);
   const solBalance = solBalanceLamports / 1_000_000_000; // Convert lamports to SOL
 
-  console.log("Base account balance value:", baseBalanceValue.value);
-  console.log("Quote account balance value:", quoteBalanceValue.value);
-  console.log("SOL balance:", solBalance);
-
   const baseWalletBalance = baseBalanceValue.value.uiAmount ?? 0;
   const quoteWalletBalance = quoteBalanceValue.value.uiAmount ?? 0;
-
-  console.log("Raw base wallet balance:", baseWalletBalance);
-  console.log("Raw quote wallet balance:", quoteWalletBalance);
 
   // Get trader state to calculate locked and free balances
   const traderState: TraderState | undefined = marketState.data.traders.get(
@@ -244,9 +239,6 @@ export async function checkUserBalance(
   const baseLotsFreeInUnits =
     baseLotsFree / 10 ** marketState.data.header.baseParams.decimals;
 
-  console.log("Base lots locked in units:", baseLotsLockedInUnits);
-  console.log("Base lots free in units:", baseLotsFreeInUnits);
-
   // Get current price of base token in USD
   const currentPrice = await getCurrentPrice(marketState);
 
@@ -260,9 +252,6 @@ export async function checkUserBalance(
     baseWalletBalanceInUSD + baseLotsLockedInUSD + baseLotsFreeInUSD;
   const totalQuoteBalanceInUSD =
     quoteWalletBalance + quoteLotsLockedInUnits + quoteLotsFreeInUnits;
-
-  console.log("Base wallet balance in USD:", baseWalletBalanceInUSD);
-  console.log("Total base balance in USD:", totalBaseBalanceInUSD);
 
   return {
     solBalance: parseFloat(solBalance.toFixed(8)), // Convert lamports to SOL
@@ -330,7 +319,7 @@ export async function wrapToken(
       skipPreflight: true,
       commitment: "confirmed",
     });
-    
+
     console.log(`${amount} ${tokenName} has been added to your wallet.`);
   } catch (error) {
     if (error instanceof SendTransactionError) {
