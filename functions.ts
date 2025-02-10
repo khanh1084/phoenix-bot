@@ -186,17 +186,8 @@ export async function checkUserBalance(
   const baseBalanceValue = await connection.getTokenAccountBalance(baseAccount);
   const quoteBalanceValue = await connection.getTokenAccountBalance(quoteAccount);
 
-  const baseWalletBalance = parseFloat(
-    (baseBalanceValue.value.uiAmount ?? 0).toFixed(
-      marketState.data.header.baseParams.decimals
-    )
-  );
-
-  const quoteWalletBalance = parseFloat(
-    (quoteBalanceValue.value.uiAmount ?? 0).toFixed(
-      marketState.data.header.quoteParams.decimals
-    )
-  );
+  const baseWalletBalance = baseBalanceValue.value.uiAmount ?? 0;
+  const quoteWalletBalance = quoteBalanceValue.value.uiAmount ?? 0;
 
   // Get trader state to calculate locked and free balances
   const traderState: TraderState | undefined = marketState.data.traders.get(
