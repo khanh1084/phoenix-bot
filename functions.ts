@@ -189,6 +189,8 @@ export async function checkUserBalance(
   const baseWalletBalance = baseBalanceValue.value.uiAmount ?? 0;
   const quoteWalletBalance = quoteBalanceValue.value.uiAmount ?? 0;
 
+  console.log("Raw base wallet balance:", baseWalletBalance);
+
   // Get trader state to calculate locked and free balances
   const traderState: TraderState | undefined = marketState.data.traders.get(
     traderPublicKey.toString()
@@ -220,6 +222,9 @@ export async function checkUserBalance(
   const baseLotsFreeInUnits =
     baseLotsFree / 10 ** marketState.data.header.baseParams.decimals;
 
+  console.log("Base lots locked in units:", baseLotsLockedInUnits);
+  console.log("Base lots free in units:", baseLotsFreeInUnits);
+
   // Get current price of base token in USD
   const currentPrice = await getCurrentPrice(marketState);
 
@@ -233,6 +238,9 @@ export async function checkUserBalance(
     baseWalletBalanceInUSD + baseLotsLockedInUSD + baseLotsFreeInUSD;
   const totalQuoteBalanceInUSD =
     quoteWalletBalance + quoteLotsLockedInUnits + quoteLotsFreeInUnits;
+
+  console.log("Base wallet balance in USD:", baseWalletBalanceInUSD);
+  console.log("Total base balance in USD:", totalBaseBalanceInUSD);
 
   return {
     baseWalletBalance: parseFloat(baseWalletBalance.toFixed(8)),
