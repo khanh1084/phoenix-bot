@@ -326,8 +326,11 @@ export async function wrapToken(
     transaction.lastValidBlockHeight = lastValidBlockHeight + 150; // Increase the block height limit
     transaction.feePayer = traderPublicKey;
 
-    await sendAndConfirmTransaction(connection, transaction, [trader]);
-
+    await sendAndConfirmTransaction(connection, transaction, [trader], {
+      skipPreflight: true,
+      commitment: "confirmed",
+    });
+    
     console.log(`${amount} ${tokenName} has been added to your wallet.`);
   } catch (error) {
     if (error instanceof SendTransactionError) {
