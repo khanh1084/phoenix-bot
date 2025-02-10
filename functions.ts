@@ -6,6 +6,7 @@ import {
   TransactionInstruction,
   sendAndConfirmTransaction,
   SystemProgram,
+  SendTransactionError,
 } from "@solana/web3.js";
 import * as Phoenix from "@ellipsis-labs/phoenix-sdk";
 import { MarketState, Side } from "@ellipsis-labs/phoenix-sdk";
