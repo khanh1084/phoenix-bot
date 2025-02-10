@@ -246,6 +246,9 @@ async function trade(
         numBaseLots * marketState.data.header.baseLotSize;
       const requiredBaseBalance =
         requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+      console.log(
+        `requiredBaseBalance: ${requiredBaseBalance}, baseWalletBalance: ${baseWalletBalance}`
+      );
       if (baseWalletBalance < requiredBaseBalance) {
         console.error("Error: Insufficient base balance to place the order");
         console.log(
