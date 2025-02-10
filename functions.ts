@@ -41,6 +41,8 @@ export async function getMarketState(
   return marketState;
 }
 
+import { SelfTradeBehavior, OrderPacket } from "@ellipsis-labs/phoenix-sdk";
+
 export async function placeOrder(
   connection: Connection,
   marketState: MarketState,
@@ -51,11 +53,11 @@ export async function placeOrder(
 ): Promise<TransactionInstruction> {
   const traderPublicKey = trader.publicKey;
 
-  const orderPacket = Phoenix.getLimitOrderPacket({
+  const orderPacket: OrderPacket = getLimitOrderPacket({
     side,
     priceInTicks,
     numBaseLots,
-    selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
+    selfTradeBehavior: SelfTradeBehavior.CancelProvide,
     matchLimit: undefined,
     clientOrderId: 0,
     useOnlyDepositedFunds: true,
@@ -371,4 +373,32 @@ export async function wrapToken(
     }
     throw error; // Rethrow the error to handle it in the calling function
   }
+}
+function getLimitOrderPacket(arg0: {
+  side: Phoenix.Side;
+  priceInTicks: number;
+  numBaseLots: number;
+  selfTradeBehavior: Phoenix.SelfTradeBehavior;
+  matchLimit: undefined;
+  clientOrderId: number;
+  useOnlyDepositedFunds: boolean; // This must be true for free funds instruction
+  lastValidSlot: number;
+  lastValidUnixTimestampInSeconds: undefined;
+  failSilientlyOnInsufficientFunds: boolean;
+}): OrderPacket {
+  return {
+    __kind: "ImmediateOrCancel",
+    side: arg0.side,
+    priceInTicks: arg0.priceInTicks,
+    numBaseLots: arg0.numBaseLots,
+    numQuoteLots: 0, // Add default value
+    minBaseLotsToFill: 0, // Add default value
+    minQuoteLotsToFill: 0, // Add default value
+    selfTradeBehavior: arg0.selfTradeBehavior,
+    matchLimit: arg0.matchLimit,
+    clientOrderId: arg0.clientOrderId,
+    useOnlyDepositedFunds: arg0.useOnlyDepositedFunds,
+    lastValidSlot: arg0.lastValidSlot,
+    lastValidUnixTimestampInSeconds: arg0.lastValidUnixTimestampInSeconds,
+  };
 }
