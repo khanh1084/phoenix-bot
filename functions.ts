@@ -145,10 +145,14 @@ export async function checkUserBalance(
   const baseAccount = getAssociatedTokenAddressSync(baseMint, traderPublicKey);
   const quoteAccount = getAssociatedTokenAddressSync(quoteMint, traderPublicKey);
 
+  console.log("Base account:", baseAccount.toString());
+  console.log("Quote account:", quoteAccount.toString());
+
   // Create associated token accounts if they do not exist
   const transaction = new Transaction();
   const baseAccountInfo = await connection.getAccountInfo(baseAccount);
   if (!baseAccountInfo) {
+    console.log("Base account does not exist. Creating...");
     transaction.add(
       createAssociatedTokenAccountInstruction(
         traderPublicKey,
@@ -161,6 +165,7 @@ export async function checkUserBalance(
 
   const quoteAccountInfo = await connection.getAccountInfo(quoteAccount);
   if (!quoteAccountInfo) {
+    console.log("Quote account does not exist. Creating...");
     transaction.add(
       createAssociatedTokenAccountInstruction(
         traderPublicKey,
@@ -186,10 +191,14 @@ export async function checkUserBalance(
   const baseBalanceValue = await connection.getTokenAccountBalance(baseAccount);
   const quoteBalanceValue = await connection.getTokenAccountBalance(quoteAccount);
 
+  console.log("Base account balance value:", baseBalanceValue.value);
+  console.log("Quote account balance value:", quoteBalanceValue.value);
+
   const baseWalletBalance = baseBalanceValue.value.uiAmount ?? 0;
   const quoteWalletBalance = quoteBalanceValue.value.uiAmount ?? 0;
 
   console.log("Raw base wallet balance:", baseWalletBalance);
+  console.log("Raw quote wallet balance:", quoteWalletBalance);
 
   // Get trader state to calculate locked and free balances
   const traderState: TraderState | undefined = marketState.data.traders.get(
