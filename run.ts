@@ -4,7 +4,7 @@ import {
   PublicKey,
   sendAndConfirmTransaction,
   Transaction,
-  TransactionCtorFields,
+  SystemProgram,
   ComputeBudgetProgram,
 } from "@solana/web3.js";
 import base58 from "bs58";
@@ -16,6 +16,7 @@ import {
   getCurrentPrice,
   getCurrentOrders,
   checkUserBalance,
+  wrapToken,
 } from "./functions";
 import { getPrivateKeysFromEnv } from "./env";
 import { Side, MarketState } from "@ellipsis-labs/phoenix-sdk";
@@ -232,8 +233,18 @@ async function trade(
     if (side === Side.Ask && baseWalletBalance < numBaseLots) {
       console.error("Error: Insufficient base balance to place the order");
       console.log(`Wallet base balance: ${baseWalletBalance}, required: ${numBaseLots}`);
-      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-      continue;
+      
+      // Check if there is enough SOL to wrap into wSOL
+      const requiredSOL = numBaseLots - baseWalletBalance;
+      if (solBalance >= requiredSOL) {
+        console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
+        await wrapToken(connection, trader, requiredSOL, new PublicKey("So11111111111111111111111111111111111111112"), "wSOL");
+      } else {
+        console.error("Error: Insufficient SOL to wrap into wSOL");
+        console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
+        await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+        continue;
+      }
     }
 
     try {
@@ -348,4 +359,7 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

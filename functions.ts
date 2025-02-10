@@ -5,12 +5,14 @@ import {
   Keypair,
   TransactionInstruction,
   sendAndConfirmTransaction,
+  SystemProgram,
 } from "@solana/web3.js";
 import * as Phoenix from "@ellipsis-labs/phoenix-sdk";
 import { MarketState, Side } from "@ellipsis-labs/phoenix-sdk";
 import {
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountInstruction,
+  createSyncNativeInstruction,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
@@ -197,7 +199,8 @@ export async function checkUserBalance(
 
   const baseBalanceValue = await connection.getTokenAccountBalance(baseAccount);
   const quoteBalanceValue = await connection.getTokenAccountBalance(quoteAccount);
-  const solBalance = await connection.getBalance(traderPublicKey);
+  const solBalanceLamports = await connection.getBalance(traderPublicKey);
+  const solBalance = solBalanceLamports / 1_000_000_000; // Convert lamports to SOL
 
   console.log("Base account balance value:", baseBalanceValue.value);
   console.log("Quote account balance value:", quoteBalanceValue.value);
@@ -261,7 +264,7 @@ export async function checkUserBalance(
   console.log("Total base balance in USD:", totalBaseBalanceInUSD);
 
   return {
-    solBalance: solBalance / 10 ** 9, // Convert lamports to SOL
+    solBalance: parseFloat(solBalance.toFixed(8)), // Convert lamports to SOL
     baseWalletBalance: parseFloat(baseWalletBalance.toFixed(8)),
     quoteWalletBalance: parseFloat(quoteWalletBalance.toFixed(8)),
     baseOpenOrdersBalance: parseFloat((baseLotsLockedInUSD + baseLotsFreeInUSD).toFixed(8)),
@@ -269,4 +272,56 @@ export async function checkUserBalance(
     totalBaseBalance: parseFloat(totalBaseBalanceInUSD.toFixed(8)),
     totalQuoteBalance: parseFloat(totalQuoteBalanceInUSD.toFixed(8)),
   };
+}
+
+export async function wrapToken(
+  connection: Connection,
+  trader: Keypair,
+  amount: number,
+  mint: PublicKey,
+  tokenName: string
+): Promise<void> {
+  const traderPublicKey = trader.publicKey;
+  const tokenAccount = getAssociatedTokenAddressSync(mint, traderPublicKey, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+
+  const transaction = new Transaction();
+
+  // Create associated token account if it does not exist
+  const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
+  if (!tokenAccountInfo) {
+    transaction.add(
+      createAssociatedTokenAccountInstruction(
+        traderPublicKey,
+        tokenAccount,
+        traderPublicKey,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
+    );
+  }
+
+  // Transfer SOL to the associated token account if the token is wSOL
+  transaction.add(
+    SystemProgram.transfer({
+      fromPubkey: traderPublicKey,
+      toPubkey: tokenAccount,
+      lamports: amount * 1_000_000_000, // Convert SOL to lamports
+    })
+  );
+
+  // Sync the native account to update the balance if the token is wSOL
+  if (mint.toString() === "So11111111111111111111111111111111111111112") {
+    transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
+  }
+
+  // Send the transaction
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.lastValidBlockHeight = lastValidBlockHeight;
+  transaction.feePayer = traderPublicKey;
+
+  await sendAndConfirmTransaction(connection, transaction, [trader]);
+
+  console.log(`${amount} ${tokenName} has been added to your wallet.`);
 }
