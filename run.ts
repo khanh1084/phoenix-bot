@@ -211,6 +211,7 @@ async function trade(
 
     // Check if the balance is sufficient
     const {
+      solBalance,
       baseWalletBalance,
       quoteWalletBalance,
       baseOpenOrdersBalance,
@@ -308,6 +309,7 @@ async function main() {
     console.log("Getting user balance...");
     // Check user balance
     const {
+      solBalance,
       baseWalletBalance,
       quoteWalletBalance,
       baseOpenOrdersBalance,
@@ -316,6 +318,7 @@ async function main() {
       totalQuoteBalance,
     } = await checkUserBalance(connection, marketState, trader);
 
+    console.log("SOL balance: ", solBalance);
     console.log("Base wallet balance: ", baseWalletBalance);
     console.log("Quote wallet balance: ", quoteWalletBalance);
     console.log("Base open orders balance: ", baseOpenOrdersBalance);

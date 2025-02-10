@@ -134,6 +134,7 @@ export async function checkUserBalance(
   marketState: MarketState,
   trader: Keypair
 ): Promise<{
+  solBalance: number;
   baseWalletBalance: number;
   quoteWalletBalance: number;
   baseOpenOrdersBalance: number;
@@ -196,9 +197,11 @@ export async function checkUserBalance(
 
   const baseBalanceValue = await connection.getTokenAccountBalance(baseAccount);
   const quoteBalanceValue = await connection.getTokenAccountBalance(quoteAccount);
+  const solBalance = await connection.getBalance(traderPublicKey);
 
   console.log("Base account balance value:", baseBalanceValue.value);
   console.log("Quote account balance value:", quoteBalanceValue.value);
+  console.log("SOL balance:", solBalance);
 
   const baseWalletBalance = baseBalanceValue.value.uiAmount ?? 0;
   const quoteWalletBalance = quoteBalanceValue.value.uiAmount ?? 0;
@@ -258,6 +261,7 @@ export async function checkUserBalance(
   console.log("Total base balance in USD:", totalBaseBalanceInUSD);
 
   return {
+    solBalance: solBalance / 10 ** 9, // Convert lamports to SOL
     baseWalletBalance: parseFloat(baseWalletBalance.toFixed(8)),
     quoteWalletBalance: parseFloat(quoteWalletBalance.toFixed(8)),
     baseOpenOrdersBalance: parseFloat((baseLotsLockedInUSD + baseLotsFreeInUSD).toFixed(8)),
