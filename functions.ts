@@ -11,6 +11,8 @@ import { MarketState, Side } from "@ellipsis-labs/phoenix-sdk";
 import {
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
 export async function createPhoenixClient(
@@ -142,8 +144,8 @@ export async function checkUserBalance(
   const traderPublicKey = trader.publicKey;
   const baseMint = marketState.data.header.baseParams.mintKey;
   const quoteMint = marketState.data.header.quoteParams.mintKey;
-  const baseAccount = getAssociatedTokenAddressSync(baseMint, traderPublicKey);
-  const quoteAccount = getAssociatedTokenAddressSync(quoteMint, traderPublicKey);
+  const baseAccount = getAssociatedTokenAddressSync(baseMint, traderPublicKey, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+  const quoteAccount = getAssociatedTokenAddressSync(quoteMint, traderPublicKey, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
 
   console.log("Base account:", baseAccount.toString());
   console.log("Quote account:", quoteAccount.toString());
@@ -158,7 +160,9 @@ export async function checkUserBalance(
         traderPublicKey,
         baseAccount,
         traderPublicKey,
-        baseMint
+        baseMint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
   }
@@ -171,7 +175,9 @@ export async function checkUserBalance(
         traderPublicKey,
         quoteAccount,
         traderPublicKey,
-        quoteMint
+        quoteMint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
   }
