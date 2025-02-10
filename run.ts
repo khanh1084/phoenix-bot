@@ -230,27 +230,31 @@ async function trade(
     //   continue;
     // }
 
-    if (side === Side.Ask && baseWalletBalance < numBaseLots) {
-      console.error("Error: Insufficient base balance to place the order");
-      console.log(`Wallet base balance: ${baseWalletBalance}, required: ${numBaseLots}`);
-      
-      // Check if there is enough SOL to wrap into wSOL
-      const requiredBaseUnits = (numBaseLots - baseWalletBalance) * marketState.data.header.baseLotSize;
-      const requiredSOL = requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
-      if (solBalance >= requiredSOL) {
-        console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
-        try {
-          await wrapToken(connection, trader, requiredSOL, new PublicKey("So11111111111111111111111111111111111111112"), "wSOL");
-        } catch (error) {
-          console.error("Error wrapping SOL into wSOL:", error);
+    if (side === Side.Ask) {
+      const requiredBaseUnits = numBaseLots * marketState.data.header.baseLotSize;
+      const requiredBaseBalance = requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+      if (baseWalletBalance < requiredBaseBalance) {
+        console.error("Error: Insufficient base balance to place the order");
+        console.log(`Wallet base balance: ${baseWalletBalance}, required: ${requiredBaseBalance}`);
+        
+        // Check if there is enough SOL to wrap into wSOL
+        const requiredBaseUnits = (numBaseLots - baseWalletBalance) * marketState.data.header.baseLotSize;
+        const requiredSOL = requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+        if (solBalance >= requiredSOL) {
+          console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
+          try {
+            await wrapToken(connection, trader, requiredSOL, new PublicKey("So11111111111111111111111111111111111111112"), "wSOL");
+          } catch (error) {
+            console.error("Error wrapping SOL into wSOL:", error);
+            await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+            continue;
+          }
+        } else {
+          console.error("Error: Insufficient SOL to wrap into wSOL");
+          console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
           await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
           continue;
         }
-      } else {
-        console.error("Error: Insufficient SOL to wrap into wSOL");
-        console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
-        await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-        continue;
       }
     }
 
