@@ -65,7 +65,10 @@ export async function placeOrder(
   });
 
   try {
-    return marketState.createPlaceLimitOrderInstruction(orderPacket, traderPublicKey);
+    return marketState.createPlaceLimitOrderInstruction(
+      orderPacket,
+      traderPublicKey
+    );
   } catch (error) {
     console.error("Error creating place limit order instruction:", error);
     throw error;
@@ -96,7 +99,9 @@ export async function getCurrentOrders(
   const asks = marketState.data.asks;
   const orders: Phoenix.L3Order[] = [];
 
-  const traderIndex = marketState.data.traderPubkeyToTraderIndex.get(traderPublicKey.toString());
+  const traderIndex = marketState.data.traderPubkeyToTraderIndex.get(
+    traderPublicKey.toString()
+  );
   if (traderIndex === undefined) {
     throw new Error(`Trader index not found for ${traderPublicKey.toString()}`);
   }
@@ -150,8 +155,20 @@ export async function checkUserBalance(
   const traderPublicKey = trader.publicKey;
   const baseMint = marketState.data.header.baseParams.mintKey;
   const quoteMint = marketState.data.header.quoteParams.mintKey;
-  const baseAccount = getAssociatedTokenAddressSync(baseMint, traderPublicKey, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
-  const quoteAccount = getAssociatedTokenAddressSync(quoteMint, traderPublicKey, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+  const baseAccount = getAssociatedTokenAddressSync(
+    baseMint,
+    traderPublicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+  const quoteAccount = getAssociatedTokenAddressSync(
+    quoteMint,
+    traderPublicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
 
   console.log("Base account:", baseAccount.toString());
   console.log("Quote account:", quoteAccount.toString());
@@ -201,7 +218,9 @@ export async function checkUserBalance(
   }
 
   const baseBalanceValue = await connection.getTokenAccountBalance(baseAccount);
-  const quoteBalanceValue = await connection.getTokenAccountBalance(quoteAccount);
+  const quoteBalanceValue = await connection.getTokenAccountBalance(
+    quoteAccount
+  );
   const solBalanceLamports = await connection.getBalance(traderPublicKey);
   const solBalance = solBalanceLamports / 1_000_000_000; // Convert lamports to SOL
 
@@ -257,8 +276,12 @@ export async function checkUserBalance(
     solBalance: parseFloat(solBalance.toFixed(8)), // Convert lamports to SOL
     baseWalletBalance: parseFloat(baseWalletBalance.toFixed(8)),
     quoteWalletBalance: parseFloat(quoteWalletBalance.toFixed(8)),
-    baseOpenOrdersBalance: parseFloat((baseLotsLockedInUSD + baseLotsFreeInUSD).toFixed(8)),
-    quoteOpenOrdersBalance: parseFloat((quoteLotsLockedInUnits + quoteLotsFreeInUnits).toFixed(8)),
+    baseOpenOrdersBalance: parseFloat(
+      (baseLotsLockedInUSD + baseLotsFreeInUSD).toFixed(8)
+    ),
+    quoteOpenOrdersBalance: parseFloat(
+      (quoteLotsLockedInUnits + quoteLotsFreeInUnits).toFixed(8)
+    ),
     totalBaseBalance: parseFloat(totalBaseBalanceInUSD.toFixed(8)),
     totalQuoteBalance: parseFloat(totalQuoteBalanceInUSD.toFixed(8)),
   };
@@ -272,7 +295,13 @@ export async function wrapToken(
   tokenName: string
 ): Promise<void> {
   const traderPublicKey = trader.publicKey;
-  const tokenAccount = getAssociatedTokenAddressSync(mint, traderPublicKey, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+  const tokenAccount = getAssociatedTokenAddressSync(
+    mint,
+    traderPublicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
 
   const transaction = new Transaction();
 
@@ -296,7 +325,11 @@ export async function wrapToken(
 
   const solBalanceLamports = await connection.getBalance(traderPublicKey);
   if (solBalanceLamports < lamports) {
-    throw new Error(`Insufficient SOL balance to wrap ${amount} SOL into wSOL. Available balance: ${solBalanceLamports / 1_000_000_000} SOL`);
+    throw new Error(
+      `Insufficient SOL balance to wrap ${amount} SOL into wSOL. Available balance: ${
+        solBalanceLamports / 1_000_000_000
+      } SOL`
+    );
   }
 
   // Transfer SOL to the associated token account if the token is wSOL
@@ -310,12 +343,15 @@ export async function wrapToken(
 
   // Sync the native account to update the balance if the token is wSOL
   if (mint.toString() === "So11111111111111111111111111111111111111112") {
-    transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
+    transaction.add(
+      createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID)
+    );
   }
 
   // Send the transaction
   try {
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
     transaction.lastValidBlockHeight = lastValidBlockHeight + 150; // Increase the block height limit
     transaction.feePayer = traderPublicKey;

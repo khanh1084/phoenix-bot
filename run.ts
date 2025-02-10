@@ -132,11 +132,11 @@ async function trade(
     // if (rsi > 75) {
     //   console.log(`RSI is above 75. Placing SELL limit order for ${pair}.`);
     //   side = Side.Ask;
-    //   priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
+    //   priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100));
     // } else if (rsi < 25) {
     //   console.log(`RSI is below 25. Placing BUY limit order for ${pair}.`);
     //   side = Side.Bid;
-    //   priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100)); 
+    //   priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100));
     // } else {
     //   if (sideway) {
     //     if (rsi >= Math.min(wma45, ema9) && rsi <= Math.max(wma45, ema9)) {
@@ -146,7 +146,7 @@ async function trade(
     //           `WMA45 is below the buy limit. Placing BUY limit order for ${pair}.\n`
     //         );
     //         side = Side.Bid;
-    //         priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100)); 
+    //         priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100));
     //       } else {
     //         console.log(
     //           `WMA45 is not below the buy limit. No BUY limit order placed for ${pair}.\n`
@@ -161,7 +161,7 @@ async function trade(
     //         `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL limit order for ${pair}.\n`
     //       );
     //       side = Side.Ask;
-    //       priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
+    //       priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100));
     //     } else {
     //       console.log(
     //         `RSI is not within the sideway range and no conditions met for placing orders for ${pair}.\n`
@@ -177,13 +177,13 @@ async function trade(
     //         `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY limit order for ${pair}.\n`
     //       );
     //       side = Side.Bid;
-    //       priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100)); 
+    //       priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100));
     //     } else if (wma45 > config.WMAlimitSell && rsi > wma45) {
     //       console.log(
     //         `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL limit order for ${pair}.\n`
     //       );
     //       side = Side.Ask;
-    //       priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
+    //       priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100));
     //     } else {
     //       console.log(`No conditions met for placing orders, ${pair}.\n`);
     //       await new Promise((resolve) =>
@@ -193,12 +193,17 @@ async function trade(
     //     }
     //   }
     // }
-    
+
     side = Side.Ask;
-    priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
+    priceInTicks = marketState.floatPriceToTicks(
+      currentPrice * (1 + percentage / 100)
+    );
     console.log(`currentPrice: ${currentPrice}, priceInTicks: ${priceInTicks}`);
-    const baseAtoms = parseFloat((volume / currentPrice).toFixed(8)) * 10 ** marketState.data.header.baseParams.decimals;
-    const quoteAtoms = volume * 10 ** marketState.data.header.quoteParams.decimals;
+    const baseAtoms =
+      parseFloat((volume / currentPrice).toFixed(8)) *
+      10 ** marketState.data.header.baseParams.decimals;
+    const quoteAtoms =
+      volume * 10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
     console.log(`numBaseLots: ${numBaseLots}, numQuoteLots: ${numQuoteLots}`);
@@ -220,8 +225,12 @@ async function trade(
       totalBaseBalance,
       totalQuoteBalance,
     } = await checkUserBalance(connection, marketState, trader);
-    console.log(`solBalance: ${solBalance}, baseWalletBalance: ${baseWalletBalance}, quoteWalletBalance: ${quoteWalletBalance}`);
-    console.log(`Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`);
+    console.log(
+      `solBalance: ${solBalance}, baseWalletBalance: ${baseWalletBalance}, quoteWalletBalance: ${quoteWalletBalance}`
+    );
+    console.log(
+      `Placing order with side: ${Side[side]}, volume: ${volume}, priceInTicks: ${priceInTicks}`
+    );
 
     // if (side === Side.Bid) {
     //   const requiredQuoteUnits = numQuoteLots * marketState.data.header.quoteLotSize;
@@ -233,32 +242,62 @@ async function trade(
     // }
 
     if (side === Side.Ask) {
-      const requiredBaseUnits = numBaseLots * marketState.data.header.baseLotSize;
-      const requiredBaseBalance = requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+      const requiredBaseUnits =
+        numBaseLots * marketState.data.header.baseLotSize;
+      const requiredBaseBalance =
+        requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
       if (baseWalletBalance < requiredBaseBalance) {
         console.error("Error: Insufficient base balance to place the order");
-        console.log(`Wallet base balance: ${baseWalletBalance}, required: ${requiredBaseBalance}`);
-        
+        console.log(
+          `Wallet base balance: ${baseWalletBalance}, required: ${requiredBaseBalance}`
+        );
+
         // Check if there is enough SOL to wrap into wSOL
-        const requiredBaseUnits = (numBaseLots - baseWalletBalance) * marketState.data.header.baseLotSize;
-        const requiredSOL = requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+        const requiredBaseUnits =
+          (numBaseLots - baseWalletBalance) *
+          marketState.data.header.baseLotSize;
+        const requiredSOL =
+          requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
         if (solBalance >= requiredSOL) {
           console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
           try {
-            await wrapToken(connection, trader, requiredSOL, new PublicKey("So11111111111111111111111111111111111111112"), "wSOL");
+            await wrapToken(
+              connection,
+              trader,
+              requiredSOL,
+              new PublicKey("So11111111111111111111111111111111111111112"),
+              "wSOL"
+            );
           } catch (error) {
             console.error("Error wrapping SOL into wSOL:", error);
-            await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, timeCancel * 1000)
+            );
             continue;
           }
         } else {
           console.error("Error: Insufficient SOL to wrap into wSOL");
           console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
-                  await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+          await new Promise((resolve) =>
+            setTimeout(resolve, timeCancel * 1000)
+          );
+          continue;
+        }
+      }
+      // After wrapping, check if baseWalletBalance is still insufficient
+      const { baseWalletBalance: updatedBaseBalance } = await checkUserBalance(
+        connection,
+        marketState,
+        trader
+      );
+      if (updatedBaseBalance < requiredBaseBalance) {
+        console.error(
+          "Error: Still insufficient base balance. Skipping order."
+        );
+        await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
         continue;
       }
     }
-  }
 
     try {
       const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
@@ -279,12 +318,12 @@ async function trade(
         lastValidBlockHeight,
         feePayer: trader.publicKey,
       })
-      .add(
-        ComputeBudgetProgram.setComputeUnitLimit({
-          units: 500000, // Increase the limit as needed
-        })
-      )
-      .add(placeOrderTx);
+        .add(
+          ComputeBudgetProgram.setComputeUnitLimit({
+            units: 500000, // Increase the limit as needed
+          })
+        )
+        .add(placeOrderTx);
 
       const placeOrderTxId = await sendAndConfirmTransaction(
         connection,
@@ -306,11 +345,8 @@ async function trade(
       }
     }
 
-    const currentOrders = await getCurrentOrders(
-        marketState,
-        trader.publicKey
-      );
-      console.log("Current orders:", currentOrders.length);
+    const currentOrders = await getCurrentOrders(marketState, trader.publicKey);
+    console.log("Current orders:", currentOrders.length);
 
     // Wait for the specified time
     await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
