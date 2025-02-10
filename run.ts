@@ -235,7 +235,8 @@ async function trade(
       console.log(`Wallet base balance: ${baseWalletBalance}, required: ${numBaseLots}`);
       
       // Check if there is enough SOL to wrap into wSOL
-      const requiredSOL = numBaseLots - baseWalletBalance;
+      const requiredBaseUnits = (numBaseLots - baseWalletBalance) * marketState.data.header.baseLotSize;
+      const requiredSOL = requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
       if (solBalance >= requiredSOL) {
         console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
         await wrapToken(connection, trader, requiredSOL, new PublicKey("So11111111111111111111111111111111111111112"), "wSOL");
