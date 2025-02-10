@@ -102,113 +102,44 @@ async function trade(
     } catch (error: any) {
       console.error(`Error checking orders: ${error.message}`);
     }
+
     const {
-      rsi,
-      wma: wma45,
-      ema: ema9,
-    } = await calculateIndicators(marketState);
-    console.log(
-      `\nRSI: ${rsi}, WMA45: ${wma45}, EMA9: ${ema9}, Time: ${new Date().toLocaleString()}, Pair: ${pair}`
+      solBalance,
+      baseWalletBalance,
+      quoteWalletBalance,
+      baseOpenOrdersBalance,
+      quoteOpenOrdersBalance,
+      totalBaseBalance,
+      totalQuoteBalance,
+    } = await checkUserBalance(connection, marketState, trader);
+
+    console.log("SOL balance: ", solBalance);
+    console.log("Base wallet balance: ", baseWalletBalance);
+    console.log("Quote wallet balance: ", quoteWalletBalance);
+    console.log("Base open orders balance: ", baseOpenOrdersBalance);
+    console.log("Quote open orders balance: ", quoteOpenOrdersBalance);
+    console.log("Total base balance: ", totalBaseBalance);
+    console.log("Total quote balance: ", totalQuoteBalance);
+
+    const symbol = "SOLUSDC";
+    const interval = "5m";
+
+    // Initialize the WebSocket connection to fetch candlestick data
+    initFirstCandleSticks(symbol, interval);
+    initCandleStickWS(symbol, interval);
+    initPriceWS(symbol);
+
+    // Trade
+    await trade(
+      connection,
+      marketState,
+      trader,
+      symbol,
+      config.sideway,
+      config.volume,
+      config.percentage,
+      config.cancelTime
     );
-    console.log(
-      `WMAlimitSell: ${config.WMAlimitSell}, WMAlimitBuy: ${config.WMAlimitBuy}`
-    );
-
-    // Check if indicators are valid
-    if (isNaN(rsi) || isNaN(wma45) || isNaN(ema9)) {
-      console.log(
-        "Not enough data to calculate indicators. Skipping this iteration."
-      );
-      await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
-      continue;
-    }
-
-    let side: Side;
-    let priceInTicks: number;
-    const currentPrice = priceStream;
-
-    // Always place limit orders based on the current price and percentage
-
-    if (rsi > 75) {
-      console.log(`RSI is above 75. Placing SELL limit order for ${pair}.`);
-      side = Side.Ask;
-      priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
-    } else if (rsi < 25) {
-      console.log(`RSI is below 25. Placing BUY limit order for ${pair}.`);
-      side = Side.Bid;
-      priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100)); 
-    } else {
-      if (sideway) {
-        if (rsi >= Math.min(wma45, ema9) && rsi <= Math.max(wma45, ema9)) {
-          console.log(`RSI is within the sideway range, ${pair}.`);
-          if (wma45 < config.WMAlimitBuy) {
-            console.log(
-              `WMA45 is below the buy limit. Placing BUY limit order for ${pair}.\n`
-            );
-            side = Side.Bid;
-            priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100)); 
-          } else {
-            console.log(
-              `WMA45 is not below the buy limit. No BUY limit order placed for ${pair}.\n`
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, timeCancel * 1000)
-            );
-            continue;
-          }
-        } else if (rsi > Math.max(wma45, ema9) && wma45 > config.WMAlimitSell) {
-          console.log(
-            `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL limit order for ${pair}.\n`
-          );
-          side = Side.Ask;
-          priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
-        } else {
-          console.log(
-            `RSI is not within the sideway range and no conditions met for placing orders for ${pair}.\n`
-          );
-          await new Promise((resolve) =>
-            setTimeout(resolve, timeCancel * 1000)
-          );
-          continue;
-        }
-      } else {
-        if (wma45 < config.WMAlimitBuy && rsi < wma45) {
-          console.log(
-            `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY limit order for ${pair}.\n`
-          );
-          side = Side.Bid;
-          priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 - percentage / 100)); 
-        } else if (wma45 > config.WMAlimitSell && rsi > wma45) {
-          console.log(
-            `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL limit order for ${pair}.\n`
-          );
-          side = Side.Ask;
-          priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
-        } else {
-          console.log(`No conditions met for placing orders, ${pair}.\n`);
-          await new Promise((resolve) =>
-            setTimeout(resolve, timeCancel * 1000)
-          );
-          continue;
-        }
-      }
-    }
-    
-    // side = Side.Ask;
-    // priceInTicks = marketState.floatPriceToTicks(currentPrice * (1 + percentage / 100)); 
-    console.log(`currentPrice: ${currentPrice}, priceInTicks: ${priceInTicks}`);
-    const baseAtoms = parseFloat((volume / currentPrice).toFixed(8)) * 10 ** marketState.data.header.baseParams.decimals;
-    const quoteAtoms = volume * 10 ** marketState.data.header.quoteParams.decimals;
-    const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
-    const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
-    console.log(`numBaseLots: ${numBaseLots}, numQuoteLots: ${numQuoteLots}`);
-
-    // Ensure either numBaseLots or numQuoteLots is nonzero
-    if (numBaseLots == 0 && numQuoteLots == 0) {
-      console.error("Either numBaseLots or numQuoteLots must be nonzero.");
-      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-      continue;
-    }
 
     // Check if the balance is sufficient
     const {
@@ -362,5 +293,4 @@ async function main() {
 
 main().catch((err) => {
   console.error(err);
-  process.exit(1);
 });
