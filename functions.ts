@@ -294,6 +294,11 @@ export async function wrapToken(
   // Convert SOL to lamports and ensure it is an integer
   const lamports = BigInt(Math.round(amount * 1_000_000_000));
 
+  const solBalanceLamports = await connection.getBalance(traderPublicKey);
+  if (solBalanceLamports < lamports) {
+    throw new Error(`Insufficient SOL balance to wrap ${amount} SOL into wSOL. Available balance: ${solBalanceLamports / 1_000_000_000} SOL`);
+  }
+
   // Transfer SOL to the associated token account if the token is wSOL
   transaction.add(
     SystemProgram.transfer({
