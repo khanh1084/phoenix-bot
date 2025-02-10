@@ -318,7 +318,7 @@ export async function wrapToken(
   // Send the transaction
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
   transaction.recentBlockhash = blockhash;
-  transaction.lastValidBlockHeight = lastValidBlockHeight;
+  transaction.lastValidBlockHeight = lastValidBlockHeight + 10; // Increase the block height limit
   transaction.feePayer = traderPublicKey;
 
   await sendAndConfirmTransaction(connection, transaction, [trader]);
