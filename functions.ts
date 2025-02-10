@@ -302,12 +302,15 @@ export async function wrapToken(
     );
   }
 
+  // Convert SOL to lamports and ensure it is an integer
+  const lamports = BigInt(Math.round(amount * 1_000_000_000));
+
   // Transfer SOL to the associated token account if the token is wSOL
   transaction.add(
     SystemProgram.transfer({
       fromPubkey: traderPublicKey,
       toPubkey: tokenAccount,
-      lamports: amount * 1_000_000_000, // Convert SOL to lamports
+      lamports: lamports, // Use BigInt for lamports
     })
   );
 
