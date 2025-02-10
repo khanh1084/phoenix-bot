@@ -316,12 +316,22 @@ export async function wrapToken(
   }
 
   // Send the transaction
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-  transaction.recentBlockhash = blockhash;
-  transaction.lastValidBlockHeight = lastValidBlockHeight + 10; // Increase the block height limit
-  transaction.feePayer = traderPublicKey;
+  try {
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.lastValidBlockHeight = lastValidBlockHeight + 10; // Increase the block height limit
+    transaction.feePayer = traderPublicKey;
 
-  await sendAndConfirmTransaction(connection, transaction, [trader]);
+    await sendAndConfirmTransaction(connection, transaction, [trader]);
 
-  console.log(`${amount} ${tokenName} has been added to your wallet.`);
+    console.log(`${amount} ${tokenName} has been added to your wallet.`);
+  } catch (error) {
+    if (error instanceof SendTransactionError) {
+      console.error("SendTransactionError:", error.message);
+      console.error("Transaction logs:", await error.getLogs(connection));
+    } else {
+      console.error("Error wrapping token:", error);
+    }
+    throw error; // Rethrow the error to handle it in the calling function
+  }
 }

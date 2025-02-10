@@ -239,7 +239,13 @@ async function trade(
       const requiredSOL = requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
       if (solBalance >= requiredSOL) {
         console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
-        await wrapToken(connection, trader, requiredSOL, new PublicKey("So11111111111111111111111111111111111111112"), "wSOL");
+        try {
+          await wrapToken(connection, trader, requiredSOL, new PublicKey("So11111111111111111111111111111111111111112"), "wSOL");
+        } catch (error) {
+          console.error("Error wrapping SOL into wSOL:", error);
+          await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+          continue;
+        }
       } else {
         console.error("Error: Insufficient SOL to wrap into wSOL");
         console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
