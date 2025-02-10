@@ -65,7 +65,7 @@ export async function placeOrder(
   });
 
   try {
-    return marketState.createPlaceLimitOrderInstruction(
+    return marketState.createPlaceLimitOrderWithFreeFundsInstruction(
       orderPacket,
       traderPublicKey
     );
