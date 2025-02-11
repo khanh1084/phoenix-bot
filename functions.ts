@@ -384,12 +384,13 @@ export async function wrapToken(
   }
 }
 
+// Language: TypeScript
 export async function placeOrderWithSol(
   connection: Connection,
   marketState: MarketState,
   trader: Keypair,
   side: Side,
-  volume: number,
+  volume: number, // Volume expressed in base lots
   priceInTicks: number
 ): Promise<void> {
   console.log("placeOrderWithSol called with parameters:", {
@@ -398,7 +399,7 @@ export async function placeOrderWithSol(
     priceInTicks,
   });
 
-  // 1. Get the wSOL mint and derive the associated token account for the trader.
+  // 1. Determine the wrapped SOL mint and the associated token account for the trader.
   const wsolMint = new PublicKey("So11111111111111111111111111111111111111112");
   const tokenAccount = getAssociatedTokenAddressSync(
     wsolMint,
@@ -414,7 +415,7 @@ export async function placeOrderWithSol(
   transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 }));
   console.log("Compute budget instruction added.");
 
-  // 3. Check if the associated token account exists; if not, add an instruction to create it.
+  // 3. Ensure the associated token account exists.
   const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
   if (!tokenAccountInfo) {
     console.log("Token account does not exist. Creating ATA...");
@@ -432,15 +433,19 @@ export async function placeOrderWithSol(
     console.log("Token account exists.");
   }
 
-  // 4. Convert the volume (in base lots) to SOL using the market's baseLotSize.
-  //    baseLotSize is expected to represent the number of SOL (or base units) per lot.
-  const baseLotSize = Number(marketState.data.header.baseLotSize);
-  const solAmount = volume * baseLotSize;
+  // 4. Convert order volume (in base lots) to the SOL amount for wrapping.
+  //    Conversion reference:
+  //      requiredBaseUnits = volume * baseLotSize.
+  //      required SOL = requiredBaseUnits / (10^baseDecimals).
+  const baseLotSize = Number(marketState.data.header.baseLotSize); // e.g. 1,000,000
+  const baseDecimals = marketState.data.header.baseParams.decimals; // e.g. 6
+  const solAmount = (volume * baseLotSize) / Math.pow(10, baseDecimals);
   const lamports = Math.round(solAmount * 1e9);
   console.log(
-    `Transferring SOL: volume (in lots): ${volume}, baseLotSize: ${baseLotSize}, solAmount: ${solAmount} SOL, lamports: ${lamports}`
+    `Calculated SOL amount: ${solAmount} (for volume in lots: ${volume}), converted to lamports: ${lamports}`
   );
 
+  // 5. Add transfer instruction to wrap SOL.
   transaction.add(
     SystemProgram.transfer({
       fromPubkey: trader.publicKey,
@@ -448,12 +453,13 @@ export async function placeOrderWithSol(
       lamports,
     })
   );
+  console.log("SOL transfer instruction added.");
 
-  // 5. Add the sync native instruction to update the wSOL account balance.
+  // 6. Add sync native instruction to update the wSOL token account balance.
   transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
   console.log("SyncNativeInstruction added for token account.");
 
-  // 6. Prepare the limit order packet.
+  // 7. Prepare the limit order packet.
   console.log("Preparing limit order packet with these details:", {
     side,
     priceInTicks,
@@ -473,7 +479,7 @@ export async function placeOrderWithSol(
   });
   console.log("Order packet created:", orderPacket);
 
-  // 7. Add the place limit order instruction to the transaction.
+  // 8. Add the limit order instruction to the transaction.
   const orderInstruction = marketState.createPlaceLimitOrderInstruction(
     orderPacket,
     trader.publicKey
@@ -481,9 +487,9 @@ export async function placeOrderWithSol(
   transaction.add(orderInstruction);
   console.log("Place limit order instruction added to transaction.");
 
-  // 8. Send and confirm the transaction.
+  // 9. Send and confirm the transaction.
   console.log(
-    "Sending transaction with the following instructions:",
+    "Sending transaction with instructions:",
     transaction.instructions
   );
   const txid = await sendAndConfirmTransaction(
@@ -495,5 +501,5 @@ export async function placeOrderWithSol(
       preflightCommitment: "confirmed",
     }
   );
-  console.log("Order placed successfully:", txid);
+  console.log("Order placed successfully. Txid:", txid);
 }
