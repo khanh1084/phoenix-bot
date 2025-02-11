@@ -257,61 +257,50 @@ async function trade(
         console.log(`Wrapping ${amountToWrap} SOL into wSOL...`);
 
         // Call placeOrderWithSol using the wrapped amount instead of the full volume
-        await placeOrderWithSol(
-          connection,
-          marketState,
-          trader,
-          side,
-          amountToWrap,
-          priceInTicks
-        );
         // Continue to next iteration or break as needed
-        continue;
-
-        //   // Check if there is enough SOL to wrap into wSOL
-        //   const requiredBaseUnits =
-        //     (numBaseLots - baseWalletBalance) *
-        //     Number(marketState.data.header.baseLotSize);
-        //   const requiredSOL =
-        //     requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
-        //   if (solBalance >= requiredSOL) {
-        //     console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
-        //     try {
-        //       await wrapToken(
-        //         connection,
-        //         trader,
-        //         requiredSOL,
-        //         new PublicKey("So11111111111111111111111111111111111111112"),
-        //         "wSOL"
-        //       );
-        //     } catch (error) {
-        //       console.error("Error wrapping SOL into wSOL:", error);
-        //       await new Promise((resolve) =>
-        //         setTimeout(resolve, timeCancel * 1000)
-        //       );
-        //       continue;
-        //     }
-        //   } else {
-        //     console.error("Error: Insufficient SOL to wrap into wSOL");
-        //     console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
-        //     await new Promise((resolve) =>
-        //       setTimeout(resolve, timeCancel * 1000)
-        //     );
-        //     continue;
-        //   }
-        // }
-        // // After wrapping, check if baseWalletBalance is still insufficient
-        // const { baseWalletBalance: updatedBaseBalance } = await checkUserBalance(
-        //   connection,
-        //   marketState,
-        //   trader
-        // );
-        // if (updatedBaseBalance < requiredBaseBalance) {
-        //   console.error(
-        //     "Error: Still insufficient base balance. Skipping order."
-        //   );
-        //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-        //   continue;
+        // Check if there is enough SOL to wrap into wSOL
+        const requiredBaseUnits =
+          (numBaseLots - baseWalletBalance) *
+          Number(marketState.data.header.baseLotSize);
+        const requiredSOL =
+          requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+        if (solBalance >= requiredSOL) {
+          console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
+          try {
+            await wrapToken(
+              connection,
+              trader,
+              requiredSOL,
+              new PublicKey("So11111111111111111111111111111111111111112"),
+              "wSOL"
+            );
+          } catch (error) {
+            console.error("Error wrapping SOL into wSOL:", error);
+            await new Promise((resolve) =>
+              setTimeout(resolve, timeCancel * 1000)
+            );
+            continue;
+          }
+        } else {
+          console.error("Error: Insufficient SOL to wrap into wSOL");
+          console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
+          await new Promise((resolve) =>
+            setTimeout(resolve, timeCancel * 1000)
+          );
+          continue;
+        }
+        // After wrapping, check if baseWalletBalance is still insufficient
+        const { baseWalletBalance: updatedBaseBalance } =
+          await checkUserBalance(connection, marketState, trader);
+        if (updatedBaseBalance < requiredBaseBalance) {
+          console.error(
+            "Error: Still insufficient base balance. Skipping order."
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, timeCancel * 1000)
+          );
+          continue;
+        }
       }
     }
 
