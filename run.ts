@@ -247,6 +247,7 @@ async function trade(
         numBaseLots * Number(marketState.data.header.baseLotSize);
       const requiredBaseBalance =
         requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+
       if (baseWalletBalance < requiredBaseBalance) {
         console.error("Error: Insufficient base balance to place the order");
         console.log(
@@ -256,24 +257,18 @@ async function trade(
         const amountToWrap = requiredBaseBalance - baseWalletBalance;
         console.log(`Wrapping ${amountToWrap} SOL into wSOL...`);
 
-        // Call placeOrderWithSol using the wrapped amount instead of the full volume
-        // Continue to next iteration or break as needed
-        // Check if there is enough SOL to wrap into wSOL
-        const requiredBaseUnits =
-          (numBaseLots - baseWalletBalance) *
-          Number(marketState.data.header.baseLotSize);
-        const requiredSOL =
-          requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
-        if (solBalance >= requiredSOL) {
-          console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
+        if (solBalance >= amountToWrap) {
           try {
+            // Wrap only the missing SOL
             await wrapToken(
               connection,
               trader,
-              requiredSOL,
+              amountToWrap,
               new PublicKey("So11111111111111111111111111111111111111112"),
               "wSOL"
             );
+            // Optionally wait a bit for the new balance to reflect on-chain
+            await new Promise((resolve) => setTimeout(resolve, 2000));
           } catch (error) {
             console.error("Error wrapping SOL into wSOL:", error);
             await new Promise((resolve) =>
@@ -283,19 +278,7 @@ async function trade(
           }
         } else {
           console.error("Error: Insufficient SOL to wrap into wSOL");
-          console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
-          await new Promise((resolve) =>
-            setTimeout(resolve, timeCancel * 1000)
-          );
-          continue;
-        }
-        // After wrapping, check if baseWalletBalance is still insufficient
-        const { baseWalletBalance: updatedBaseBalance } =
-          await checkUserBalance(connection, marketState, trader);
-        if (updatedBaseBalance < requiredBaseBalance) {
-          console.error(
-            "Error: Still insufficient base balance. Skipping order."
-          );
+          console.log(`SOL balance: ${solBalance}, required: ${amountToWrap}`);
           await new Promise((resolve) =>
             setTimeout(resolve, timeCancel * 1000)
           );
