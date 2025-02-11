@@ -17,6 +17,7 @@ import {
   getCurrentOrders,
   checkUserBalance,
   wrapToken,
+  placeOrderWithSol,
 } from "./functions";
 import { getPrivateKeysFromEnv } from "./env";
 import { Side, MarketState } from "@ellipsis-labs/phoenix-sdk";
@@ -243,7 +244,7 @@ async function trade(
 
     if (side === Side.Ask) {
       const requiredBaseUnits =
-        numBaseLots * marketState.data.header.baseLotSize;
+        numBaseLots * Number(marketState.data.header.baseLotSize);
       const requiredBaseBalance =
         requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
       if (baseWalletBalance < requiredBaseBalance) {
@@ -252,90 +253,102 @@ async function trade(
           `Wallet base balance: ${baseWalletBalance}, required: ${requiredBaseBalance}`
         );
 
-        // Check if there is enough SOL to wrap into wSOL
-        const requiredBaseUnits =
-          (numBaseLots - baseWalletBalance) *
-          marketState.data.header.baseLotSize;
-        const requiredSOL =
-          requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
-        if (solBalance >= requiredSOL) {
-          console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
-          try {
-            await wrapToken(
-              connection,
-              trader,
-              requiredSOL,
-              new PublicKey("So11111111111111111111111111111111111111112"),
-              "wSOL"
-            );
-          } catch (error) {
-            console.error("Error wrapping SOL into wSOL:", error);
-            await new Promise((resolve) =>
-              setTimeout(resolve, timeCancel * 1000)
-            );
-            continue;
-          }
-        } else {
-          console.error("Error: Insufficient SOL to wrap into wSOL");
-          console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
-          await new Promise((resolve) =>
-            setTimeout(resolve, timeCancel * 1000)
-          );
-          continue;
-        }
-      }
-      // After wrapping, check if baseWalletBalance is still insufficient
-      const { baseWalletBalance: updatedBaseBalance } = await checkUserBalance(
-        connection,
-        marketState,
-        trader
-      );
-      if (updatedBaseBalance < requiredBaseBalance) {
-        console.error(
-          "Error: Still insufficient base balance. Skipping order."
-        );
-        await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-        continue;
+        //   // Check if there is enough SOL to wrap into wSOL
+        //   const requiredBaseUnits =
+        //     (numBaseLots - baseWalletBalance) *
+        //     Number(marketState.data.header.baseLotSize);
+        //   const requiredSOL =
+        //     requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+        //   if (solBalance >= requiredSOL) {
+        //     console.log(`Wrapping ${requiredSOL} SOL into wSOL...`);
+        //     try {
+        //       await wrapToken(
+        //         connection,
+        //         trader,
+        //         requiredSOL,
+        //         new PublicKey("So11111111111111111111111111111111111111112"),
+        //         "wSOL"
+        //       );
+        //     } catch (error) {
+        //       console.error("Error wrapping SOL into wSOL:", error);
+        //       await new Promise((resolve) =>
+        //         setTimeout(resolve, timeCancel * 1000)
+        //       );
+        //       continue;
+        //     }
+        //   } else {
+        //     console.error("Error: Insufficient SOL to wrap into wSOL");
+        //     console.log(`SOL balance: ${solBalance}, required: ${requiredSOL}`);
+        //     await new Promise((resolve) =>
+        //       setTimeout(resolve, timeCancel * 1000)
+        //     );
+        //     continue;
+        //   }
+        // }
+        // // After wrapping, check if baseWalletBalance is still insufficient
+        // const { baseWalletBalance: updatedBaseBalance } = await checkUserBalance(
+        //   connection,
+        //   marketState,
+        //   trader
+        // );
+        // if (updatedBaseBalance < requiredBaseBalance) {
+        //   console.error(
+        //     "Error: Still insufficient base balance. Skipping order."
+        //   );
+        //   await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+        //   continue;
       }
     }
 
     try {
       const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
       // const lots = numQuoteLots;
-      const placeOrderTx = await placeOrder(
-        connection,
-        marketState,
-        trader,
-        side,
-        lots,
-        priceInTicks
-      );
+      if (side === Side.Ask) {
+        console.log("Selling using placeOrderWithSol...");
+        await placeOrderWithSol(
+          connection,
+          marketState,
+          trader,
+          side,
+          lots,
+          priceInTicks
+        );
+      } else {
+        const placeOrderTx = await placeOrder(
+          connection,
+          marketState,
+          trader,
+          side,
+          lots,
+          priceInTicks
+        );
 
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash();
-      const transaction = new Transaction({
-        blockhash,
-        lastValidBlockHeight,
-        feePayer: trader.publicKey,
-      })
-        .add(
-          ComputeBudgetProgram.setComputeUnitLimit({
-            units: 500000, // Increase the limit as needed
-          })
-        )
-        .add(placeOrderTx);
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash();
+        const transaction = new Transaction({
+          blockhash,
+          lastValidBlockHeight,
+          feePayer: trader.publicKey,
+        })
+          .add(
+            ComputeBudgetProgram.setComputeUnitLimit({
+              units: 500000, // Increase the limit as needed
+            })
+          )
+          .add(placeOrderTx);
 
-      const placeOrderTxId = await sendAndConfirmTransaction(
-        connection,
-        transaction,
-        [trader],
-        {
-          commitment: "confirmed",
-          preflightCommitment: "confirmed",
-        }
-      );
+        const placeOrderTxId = await sendAndConfirmTransaction(
+          connection,
+          transaction,
+          [trader],
+          {
+            commitment: "confirmed",
+            preflightCommitment: "confirmed",
+          }
+        );
 
-      console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
+        console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
+      }
     } catch (error) {
       if (error instanceof SendTransactionError) {
         console.error("SendTransactionError:", error.message);

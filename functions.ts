@@ -7,6 +7,7 @@ import {
   sendAndConfirmTransaction,
   SystemProgram,
   SendTransactionError,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import * as Phoenix from "@ellipsis-labs/phoenix-sdk";
 import { MarketState, Side } from "@ellipsis-labs/phoenix-sdk";
@@ -17,6 +18,8 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import BN from "bn.js";
+import { toBN, toNum } from "@ellipsis-labs/phoenix-sdk";
 
 export async function createPhoenixClient(
   connection: Connection
@@ -109,13 +112,15 @@ export async function getCurrentOrders(
   for (const [orderId, order] of bids) {
     if (order.traderIndex.toString() === traderIndex.toString()) {
       orders.push({
-        priceInTicks: orderId.priceInTicks,
+        priceInTicks: toBN(orderId.priceInTicks),
         side: Phoenix.Side.Bid,
-        sizeInBaseLots: order.numBaseLots,
+        sizeInBaseLots: toBN(order.numBaseLots),
         makerPubkey: traderPublicKey.toString(),
-        orderSequenceNumber: orderId.orderSequenceNumber,
-        lastValidSlot: order.lastValidSlot,
-        lastValidUnixTimestampInSeconds: order.lastValidUnixTimestampInSeconds,
+        orderSequenceNumber: toBN(orderId.orderSequenceNumber),
+        lastValidSlot: toBN(order.lastValidSlot),
+        lastValidUnixTimestampInSeconds: toBN(
+          order.lastValidUnixTimestampInSeconds
+        ),
       });
     }
   }
@@ -123,13 +128,15 @@ export async function getCurrentOrders(
   for (const [orderId, order] of asks) {
     if (order.traderIndex.toString() === traderIndex.toString()) {
       orders.push({
-        priceInTicks: orderId.priceInTicks,
+        priceInTicks: toBN(orderId.priceInTicks),
         side: Phoenix.Side.Ask,
-        sizeInBaseLots: order.numBaseLots,
+        sizeInBaseLots: toBN(order.numBaseLots),
         makerPubkey: traderPublicKey.toString(),
-        orderSequenceNumber: orderId.orderSequenceNumber,
-        lastValidSlot: order.lastValidSlot,
-        lastValidUnixTimestampInSeconds: order.lastValidUnixTimestampInSeconds,
+        orderSequenceNumber: toBN(orderId.orderSequenceNumber),
+        lastValidSlot: toBN(order.lastValidSlot),
+        lastValidUnixTimestampInSeconds: toBN(
+          order.lastValidUnixTimestampInSeconds
+        ),
       });
     }
   }
@@ -238,13 +245,17 @@ export async function checkUserBalance(
 
   // Convert locked and free balances to their respective units
   const baseLotsLocked =
-    Number(traderState.baseLotsLocked) * marketState.data.header.baseLotSize;
+    Number(traderState.baseLotsLocked) *
+    Number(marketState.data.header.baseLotSize);
   const baseLotsFree =
-    Number(traderState.baseLotsFree) * marketState.data.header.baseLotSize;
+    Number(traderState.baseLotsFree) *
+    Number(marketState.data.header.baseLotSize);
   const quoteLotsLocked =
-    Number(traderState.quoteLotsLocked) * marketState.data.header.quoteLotSize;
+    Number(traderState.quoteLotsLocked) *
+    Number(marketState.data.header.quoteLotSize);
   const quoteLotsFree =
-    Number(traderState.quoteLotsFree) * marketState.data.header.quoteLotSize;
+    Number(traderState.quoteLotsFree) *
+    Number(marketState.data.header.quoteLotSize);
 
   // Convert quote lots to quote units
   const quoteLotsLockedInUnits =
@@ -371,4 +382,92 @@ export async function wrapToken(
     }
     throw error; // Rethrow the error to handle it in the calling function
   }
+}
+
+export async function placeOrderWithSol(
+  connection: Connection,
+  marketState: MarketState,
+  trader: Keypair,
+  side: Side,
+  volume: number,
+  priceInTicks: number
+): Promise<void> {
+  // 1. Get the wSOL token account
+  const wsolMint = new PublicKey("So11111111111111111111111111111111111111112");
+  const tokenAccount = getAssociatedTokenAddressSync(
+    wsolMint,
+    trader.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+
+  // 2. Create transaction
+  const transaction = new Transaction();
+
+  // 3. Add compute budget instruction
+  transaction.add(
+    ComputeBudgetProgram.setComputeUnitLimit({
+      units: 500000,
+    })
+  );
+
+  // 4. Create ATA if needed
+  const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
+  if (!tokenAccountInfo) {
+    transaction.add(
+      createAssociatedTokenAccountInstruction(
+        trader.publicKey,
+        tokenAccount,
+        trader.publicKey,
+        wsolMint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
+    );
+  }
+
+  // 5. Transfer SOL
+  const lamports = Math.round(volume * 1e9); // Convert to lamports
+  transaction.add(
+    SystemProgram.transfer({
+      fromPubkey: trader.publicKey,
+      toPubkey: tokenAccount,
+      lamports,
+    })
+  );
+
+  // 6. Sync native instruction
+  transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
+
+  // 7. Add place limit order instruction
+  const orderPacket = Phoenix.getLimitOrderPacket({
+    side,
+    priceInTicks: priceInTicks,
+    numBaseLots: volume,
+    selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
+    matchLimit: undefined,
+    clientOrderId: 0,
+    useOnlyDepositedFunds: false,
+    lastValidSlot: (await connection.getSlot()) + 100,
+    lastValidUnixTimestampInSeconds: undefined,
+    failSilientlyOnInsufficientFunds: false,
+  });
+
+  transaction.add(
+    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey)
+  );
+
+  // 8. Send and confirm transaction
+  const txid = await sendAndConfirmTransaction(
+    connection,
+    transaction,
+    [trader],
+    {
+      commitment: "confirmed",
+      preflightCommitment: "confirmed",
+    }
+  );
+
+  console.log("Order placed successfully:", txid);
 }
