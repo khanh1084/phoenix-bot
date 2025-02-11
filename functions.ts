@@ -392,6 +392,12 @@ export async function placeOrderWithSol(
   volume: number,
   priceInTicks: number
 ): Promise<void> {
+  console.log("placeOrderWithSol called with parameters:", {
+    side,
+    volume,
+    priceInTicks,
+  });
+
   // 1. Get the wSOL token account
   const wsolMint = new PublicKey("So11111111111111111111111111111111111111112");
   const tokenAccount = getAssociatedTokenAddressSync(
@@ -401,6 +407,7 @@ export async function placeOrderWithSol(
     TOKEN_PROGRAM_ID,
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
+  console.log("wSOL token account:", tokenAccount.toString());
 
   // 2. Create transaction
   const transaction = new Transaction();
@@ -411,10 +418,12 @@ export async function placeOrderWithSol(
       units: 500000,
     })
   );
+  console.log("Compute budget instruction added.");
 
   // 4. Create ATA if needed
   const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
   if (!tokenAccountInfo) {
+    console.log("Token account does not exist. Creating ATA...");
     transaction.add(
       createAssociatedTokenAccountInstruction(
         trader.publicKey,
@@ -425,10 +434,15 @@ export async function placeOrderWithSol(
         ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
+  } else {
+    console.log("Token account exists.");
   }
 
   // 5. Transfer SOL
-  const lamports = Math.round(volume * 1e9); // Convert to lamports
+  // Here volume is expected in SOL units when placing order with SOL,
+  // so we convert it into lamports
+  const lamports = Math.round(volume * 1e9);
+  console.log(`Transferring SOL: volume ${volume} => lamports ${lamports}`);
   transaction.add(
     SystemProgram.transfer({
       fromPubkey: trader.publicKey,
@@ -439,11 +453,17 @@ export async function placeOrderWithSol(
 
   // 6. Sync native instruction
   transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
+  console.log("SyncNativeInstruction added for token account.");
 
   // 7. Add place limit order instruction
+  console.log("Preparing limit order packet with these details:", {
+    side,
+    priceInTicks,
+    volume,
+  });
   const orderPacket = Phoenix.getLimitOrderPacket({
     side,
-    priceInTicks: priceInTicks,
+    priceInTicks,
     numBaseLots: volume,
     selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
     matchLimit: undefined,
@@ -454,11 +474,17 @@ export async function placeOrderWithSol(
     failSilientlyOnInsufficientFunds: false,
   });
 
+  console.log("Order packet created:", orderPacket);
   transaction.add(
     marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey)
   );
+  console.log("Place limit order instruction added to transaction.");
 
   // 8. Send and confirm transaction
+  console.log(
+    "Sending transaction with the following instructions:",
+    transaction.instructions
+  );
   const txid = await sendAndConfirmTransaction(
     connection,
     transaction,
