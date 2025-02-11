@@ -398,7 +398,7 @@ export async function placeOrderWithSol(
     priceInTicks,
   });
 
-  // 1. Get the wSOL token account
+  // 1. Get the wSOL mint and derive the associated token account for the trader.
   const wsolMint = new PublicKey("So11111111111111111111111111111111111111112");
   const tokenAccount = getAssociatedTokenAddressSync(
     wsolMint,
@@ -409,18 +409,12 @@ export async function placeOrderWithSol(
   );
   console.log("wSOL token account:", tokenAccount.toString());
 
-  // 2. Create transaction
+  // 2. Create a new transaction and add a compute budget instruction.
   const transaction = new Transaction();
-
-  // 3. Add compute budget instruction
-  transaction.add(
-    ComputeBudgetProgram.setComputeUnitLimit({
-      units: 500000,
-    })
-  );
+  transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 }));
   console.log("Compute budget instruction added.");
 
-  // 4. Create ATA if needed
+  // 3. Check if the associated token account exists; if not, add an instruction to create it.
   const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
   if (!tokenAccountInfo) {
     console.log("Token account does not exist. Creating ATA...");
@@ -438,11 +432,15 @@ export async function placeOrderWithSol(
     console.log("Token account exists.");
   }
 
-  // 5. Transfer SOL
-  // Here volume is expected in SOL units when placing order with SOL,
-  // so we convert it into lamports
-  const lamports = Math.round(volume * 1e9);
-  console.log(`Transferring SOL: volume ${volume} => lamports ${lamports}`);
+  // 4. Convert the volume (in base lots) to SOL using the market's baseLotSize.
+  //    baseLotSize is expected to represent the number of SOL (or base units) per lot.
+  const baseLotSize = Number(marketState.data.header.baseLotSize);
+  const solAmount = volume * baseLotSize;
+  const lamports = Math.round(solAmount * 1e9);
+  console.log(
+    `Transferring SOL: volume (in lots): ${volume}, baseLotSize: ${baseLotSize}, solAmount: ${solAmount} SOL, lamports: ${lamports}`
+  );
+
   transaction.add(
     SystemProgram.transfer({
       fromPubkey: trader.publicKey,
@@ -451,11 +449,11 @@ export async function placeOrderWithSol(
     })
   );
 
-  // 6. Sync native instruction
+  // 5. Add the sync native instruction to update the wSOL account balance.
   transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
   console.log("SyncNativeInstruction added for token account.");
 
-  // 7. Add place limit order instruction
+  // 6. Prepare the limit order packet.
   console.log("Preparing limit order packet with these details:", {
     side,
     priceInTicks,
@@ -473,14 +471,17 @@ export async function placeOrderWithSol(
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
-
   console.log("Order packet created:", orderPacket);
-  transaction.add(
-    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey)
+
+  // 7. Add the place limit order instruction to the transaction.
+  const orderInstruction = marketState.createPlaceLimitOrderInstruction(
+    orderPacket,
+    trader.publicKey
   );
+  transaction.add(orderInstruction);
   console.log("Place limit order instruction added to transaction.");
 
-  // 8. Send and confirm transaction
+  // 8. Send and confirm the transaction.
   console.log(
     "Sending transaction with the following instructions:",
     transaction.instructions
@@ -494,6 +495,5 @@ export async function placeOrderWithSol(
       preflightCommitment: "confirmed",
     }
   );
-
   console.log("Order placed successfully:", txid);
 }
