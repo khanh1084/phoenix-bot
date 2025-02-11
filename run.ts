@@ -252,6 +252,21 @@ async function trade(
         console.log(
           `Wallet base balance: ${baseWalletBalance}, required: ${requiredBaseBalance}`
         );
+        // Only wrap the missing SOL required for the order
+        const amountToWrap = requiredBaseBalance - baseWalletBalance;
+        console.log(`Wrapping ${amountToWrap} SOL into wSOL...`);
+
+        // Call placeOrderWithSol using the wrapped amount instead of the full volume
+        await placeOrderWithSol(
+          connection,
+          marketState,
+          trader,
+          side,
+          amountToWrap,
+          priceInTicks
+        );
+        // Continue to next iteration or break as needed
+        continue;
 
         //   // Check if there is enough SOL to wrap into wSOL
         //   const requiredBaseUnits =
