@@ -357,12 +357,16 @@ async function trade(
         console.error("Error placing order:", error);
       }
     }
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await marketState.reloadFromNetwork(connection);
 
     const currentOrders = await getCurrentOrders(marketState, trader.publicKey);
     console.log("Current orders:", currentOrders.length);
 
     // Wait for the specified time
     await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await marketState.reloadFromNetwork(connection);
   }
 }
 
