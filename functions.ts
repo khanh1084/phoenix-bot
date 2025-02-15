@@ -177,8 +177,8 @@ export async function checkUserBalance(
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
-  console.log("Base account:", baseAccount.toString());
-  console.log("Quote account:", quoteAccount.toString());
+  // console.log("Base account:", baseAccount.toString());
+  // console.log("Quote account:", quoteAccount.toString());
 
   // Create associated token accounts if they do not exist
   const transaction = new Transaction();

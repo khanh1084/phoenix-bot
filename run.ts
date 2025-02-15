@@ -288,7 +288,7 @@ async function trade(
     }
 
     try {
-      const lots = side === Side.Ask ? numQuoteLots : numBaseLots;
+      const lots = side === Side.Ask ? numBaseLots : numQuoteLots;
       // const lots = numQuoteLots;
       if (side === Side.Ask) {
         console.log("Selling using placeOrderWithSol...");
