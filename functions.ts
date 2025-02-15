@@ -457,7 +457,7 @@ export async function placeOrderWithSol(
       )
     );
   } else {
-    console.log("Token account exists.");
+    // console.log("Token account exists.");
   }
 
   // 4. Convert order volume (in base lots) to the SOL amount for wrapping.
@@ -480,18 +480,18 @@ export async function placeOrderWithSol(
       lamports,
     })
   );
-  console.log("SOL transfer instruction added.");
+  // console.log("SOL transfer instruction added.");
 
   // 6. Add sync native instruction to update the wSOL token account balance.
   transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
   // console.log("SyncNativeInstruction added for token account.");
 
   // 7. Prepare the limit order packet.
-  console.log("Preparing limit order packet with these details:", {
-    side,
-    priceInTicks,
-    volume,
-  });
+  // console.log("Preparing limit order packet with these details:", {
+  //   side,
+  //   priceInTicks,
+  //   volume,
+  // });
   const orderPacket = Phoenix.getLimitOrderPacket({
     side,
     priceInTicks,

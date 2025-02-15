@@ -90,7 +90,8 @@ async function trade(
           //   "All orders canceled. Transaction ID: ",
           //   cancelAllOrdersTxId
           // );
-
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await marketState.reloadFromNetwork(connection);
           // Verify that all orders are canceled
           const updatedOrders = await getCurrentOrders(
             marketState,
@@ -210,7 +211,7 @@ async function trade(
     priceInTicks = marketState.floatPriceToTicks(
       currentPrice * (1 + percentage / 100)
     );
-    console.log(`currentPrice: ${currentPrice}, priceInTicks: ${priceInTicks}`);
+    // console.log(`currentPrice: ${currentPrice}, priceInTicks: ${priceInTicks}`);
     const baseAtoms =
       parseFloat((volume / currentPrice).toFixed(8)) *
       10 ** marketState.data.header.baseParams.decimals;
@@ -221,7 +222,7 @@ async function trade(
     console.log(
       `numBaseLots: ${numBaseLots} (for ask/sell orders), numQuoteLots: ${numQuoteLots} (for bid/buy orders)`
     );
-    console.log(`Converted from volume: ${volume}`);
+    // console.log(`Converted from volume: ${volume}`);
     // Ensure either numBaseLots or numQuoteLots is nonzero
     if (numBaseLots == 0 && numQuoteLots == 0) {
       console.error("Either numBaseLots or numQuoteLots must be nonzero.");
