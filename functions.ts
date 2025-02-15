@@ -18,8 +18,10 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { getCancelOrderParamsFromL3Order } from "@ellipsis-labs/phoenix-sdk/src/utils/market";
-import { createCancelMultipleOrdersByIdInstruction } from "@ellipsis-labs/phoenix-sdk/src/instructions/CancelMultipleOrdersById";
+import {
+  getCancelOrderParamsFromL3Order,
+  createCancelMultipleOrdersByIdInstruction,
+} from "@ellipsis-labs/phoenix-sdk";
 import { toBN, toNum } from "@ellipsis-labs/phoenix-sdk";
 
 export async function createPhoenixClient(
