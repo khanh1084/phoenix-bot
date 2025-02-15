@@ -207,7 +207,9 @@ async function trade(
       volume * 10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
-    console.log(`numBaseLots: ${numBaseLots} (for ask/sell orders), numQuoteLots: ${numQuoteLots} (for bid/buy orders)`);
+    console.log(
+      `numBaseLots: ${numBaseLots} (for ask/sell orders), numQuoteLots: ${numQuoteLots} (for bid/buy orders)`
+    );
     console.log(`Converted from volume: ${volume}`);
     // Ensure either numBaseLots or numQuoteLots is nonzero
     if (numBaseLots == 0 && numQuoteLots == 0) {
@@ -378,13 +380,13 @@ async function main() {
       totalQuoteBalance,
     } = await checkUserBalance(connection, marketState, trader);
 
-    console.log("SOL balance: ", solBalance);
-    console.log("Base wallet balance: ", baseWalletBalance);
-    console.log("Quote wallet balance: ", quoteWalletBalance);
-    console.log("Base open orders balance: ", baseOpenOrdersBalance);
-    console.log("Quote open orders balance: ", quoteOpenOrdersBalance);
-    console.log("Total base balance: ", totalBaseBalance);
-    console.log("Total quote balance: ", totalQuoteBalance);
+    // console.log("SOL balance: ", solBalance);
+    // console.log("Base wallet balance: ", baseWalletBalance);
+    // console.log("Quote wallet balance: ", quoteWalletBalance);
+    // console.log("Base open orders balance: ", baseOpenOrdersBalance);
+    // console.log("Quote open orders balance: ", quoteOpenOrdersBalance);
+    // console.log("Total base balance: ", totalBaseBalance);
+    // console.log("Total quote balance: ", totalQuoteBalance);
 
     const symbol = "SOLUSDC";
     const interval = "5m";

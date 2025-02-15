@@ -441,9 +441,9 @@ export async function placeOrderWithSol(
   const baseDecimals = marketState.data.header.baseParams.decimals; // e.g. 6
   const solAmount = (volume * baseLotSize) / Math.pow(10, baseDecimals);
   const lamports = Math.round(solAmount * 1e9);
-  console.log(
-    `Calculated SOL amount: ${solAmount} (for volume in lots: ${volume}), converted to lamports: ${lamports}`
-  );
+  // console.log(
+  //   `Calculated SOL amount: ${solAmount} (for volume in lots: ${volume}), converted to lamports: ${lamports}`
+  // );
 
   // 5. Add transfer instruction to wrap SOL.
   transaction.add(
@@ -477,7 +477,7 @@ export async function placeOrderWithSol(
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
-  console.log("Order packet created:", orderPacket);
+  // console.log("Order packet created:", orderPacket);
 
   // 8. Add the limit order instruction to the transaction.
   const orderInstruction = marketState.createPlaceLimitOrderInstruction(
@@ -485,13 +485,13 @@ export async function placeOrderWithSol(
     trader.publicKey
   );
   transaction.add(orderInstruction);
-  console.log("Place limit order instruction added to transaction.");
+  // console.log("Place limit order instruction added to transaction.");
 
   // 9. Send and confirm the transaction.
-  console.log(
-    "Sending transaction with instructions:",
-    transaction.instructions
-  );
+  // console.log(
+  //   "Sending transaction with instructions:",
+  //   transaction.instructions
+  // );
   const txid = await sendAndConfirmTransaction(
     connection,
     transaction,
