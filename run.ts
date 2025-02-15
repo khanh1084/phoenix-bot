@@ -47,7 +47,18 @@ async function trade(
         marketState,
         trader.publicKey
       );
-      console.log("Current orders:", currentOrders);
+      console.log("Current orders count:", currentOrders.length);
+      currentOrders.forEach((order, i) => {
+        console.log(`Order ${i + 1}:`, {
+          orderSequenceNumber: order.orderSequenceNumber.toString(),
+          priceInTicks: order.priceInTicks.toString(),
+          side: Side[order.side],
+          sizeInBaseLots: order.sizeInBaseLots.toString(),
+          lastValidSlot: order.lastValidSlot.toString(),
+          lastValidUnixTimestampInSeconds:
+            order.lastValidUnixTimestampInSeconds.toString(),
+        });
+      });
       if (currentOrders.length > 0) {
         let cancelAllOrdersTxId;
         try {
