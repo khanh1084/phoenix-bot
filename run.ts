@@ -47,7 +47,7 @@ async function trade(
         marketState,
         trader.publicKey
       );
-      console.log("Current orders:", currentOrders);
+      // console.log("Current orders:", currentOrders);
       if (currentOrders.length > 0) {
         let cancelAllOrdersTxId;
         try {
@@ -75,17 +75,17 @@ async function trade(
               preflightCommitment: "confirmed",
             }
           );
-          console.log(
-            "All orders canceled. Transaction ID: ",
-            cancelAllOrdersTxId
-          );
+          // console.log(
+          //   "All orders canceled. Transaction ID: ",
+          //   cancelAllOrdersTxId
+          // );
 
           // Verify that all orders are canceled
           const updatedOrders = await getCurrentOrders(
             marketState,
             trader.publicKey
           );
-          console.log("Updated orders after cancel:", updatedOrders);
+          // console.log("Updated orders after cancel:", updatedOrders);
           if (updatedOrders.length > 0) {
             console.error("Error: Some orders were not canceled.");
           }
@@ -108,12 +108,12 @@ async function trade(
       wma: wma45,
       ema: ema9,
     } = await calculateIndicators(marketState);
-    console.log(
-      `\nRSI: ${rsi}, WMA45: ${wma45}, EMA9: ${ema9}, Time: ${new Date().toLocaleString()}, Pair: ${pair}`
-    );
-    console.log(
-      `WMAlimitSell: ${config.WMAlimitSell}, WMAlimitBuy: ${config.WMAlimitBuy}`
-    );
+    // console.log(
+    //   `\nRSI: ${rsi}, WMA45: ${wma45}, EMA9: ${ema9}, Time: ${new Date().toLocaleString()}, Pair: ${pair}`
+    // );
+    // console.log(
+    //   `WMAlimitSell: ${config.WMAlimitSell}, WMAlimitBuy: ${config.WMAlimitBuy}`
+    // );
 
     // Check if indicators are valid
     if (isNaN(rsi) || isNaN(wma45) || isNaN(ema9)) {
@@ -207,8 +207,8 @@ async function trade(
       volume * 10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
-    console.log(`numBaseLots: ${numBaseLots}, numQuoteLots: ${numQuoteLots}`);
-
+    console.log(`numBaseLots: ${numBaseLots} (for ask/sell orders), numQuoteLots: ${numQuoteLots} (for bid/buy orders)`);
+    console.log(`Converted from volume: ${volume}`);
     // Ensure either numBaseLots or numQuoteLots is nonzero
     if (numBaseLots == 0 && numQuoteLots == 0) {
       console.error("Either numBaseLots or numQuoteLots must be nonzero.");
