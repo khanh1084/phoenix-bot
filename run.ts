@@ -47,7 +47,7 @@ async function trade(
         marketState,
         trader.publicKey
       );
-      // console.log("Current orders:", currentOrders);
+      console.log("Current orders:", currentOrders);
       if (currentOrders.length > 0) {
         let cancelAllOrdersTxId;
         try {
@@ -293,7 +293,6 @@ async function trade(
       const lots = side === Side.Ask ? numBaseLots : numQuoteLots;
       // const lots = numQuoteLots;
       if (side === Side.Ask) {
-        console.log("Selling using placeOrderWithSol...");
         await placeOrderWithSol(
           connection,
           marketState,

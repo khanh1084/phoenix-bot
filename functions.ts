@@ -393,11 +393,11 @@ export async function placeOrderWithSol(
   volume: number, // Volume expressed in base lots
   priceInTicks: number
 ): Promise<void> {
-  console.log("placeOrderWithSol called with parameters:", {
-    side,
-    volume,
-    priceInTicks,
-  });
+  // console.log("placeOrderWithSol called with parameters:", {
+  //   side,
+  //   volume,
+  //   priceInTicks,
+  // });
 
   // 1. Determine the wrapped SOL mint and the associated token account for the trader.
   const wsolMint = new PublicKey("So11111111111111111111111111111111111111112");
@@ -408,12 +408,12 @@ export async function placeOrderWithSol(
     TOKEN_PROGRAM_ID,
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
-  console.log("wSOL token account:", tokenAccount.toString());
+  // console.log("wSOL token account:", tokenAccount.toString());
 
   // 2. Create a new transaction and add a compute budget instruction.
   const transaction = new Transaction();
   transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 }));
-  console.log("Compute budget instruction added.");
+  // console.log("Compute budget instruction added.");
 
   // 3. Ensure the associated token account exists.
   const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
@@ -457,7 +457,7 @@ export async function placeOrderWithSol(
 
   // 6. Add sync native instruction to update the wSOL token account balance.
   transaction.add(createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID));
-  console.log("SyncNativeInstruction added for token account.");
+  // console.log("SyncNativeInstruction added for token account.");
 
   // 7. Prepare the limit order packet.
   console.log("Preparing limit order packet with these details:", {
