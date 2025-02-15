@@ -357,15 +357,14 @@ async function trade(
         console.error("Error placing order:", error);
       }
     }
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    await marketState.reloadFromNetwork(connection);
+    // await new Promise((resolve) => setTimeout(resolve, 5000));
+    // await marketState.reloadFromNetwork(connection);
 
-    const currentOrders = await getCurrentOrders(marketState, trader.publicKey);
-    console.log("Current orders:", currentOrders.length);
+    // const currentOrders = await getCurrentOrders(marketState, trader.publicKey);
+    // console.log("Current orders:", currentOrders.length);
 
     // Wait for the specified time
     await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     await marketState.reloadFromNetwork(connection);
   }
 }
@@ -374,16 +373,16 @@ async function main() {
   const privateKeys = getPrivateKeysFromEnv();
   for (const privateKey of privateKeys) {
     const trader = Keypair.fromSecretKey(base58.decode(privateKey));
-    console.log("Trader public key:", trader.publicKey.toString());
+    // console.log("Trader public key:", trader.publicKey.toString());
 
     const connection = new Connection("https://api.mainnet-beta.solana.com");
-    console.log("Creating Phoenix client...");
+    // console.log("Creating Phoenix client...");
     const phoenix = await createPhoenixClient(connection);
-    console.log("Creating Phoenix client... Done");
-    console.log("Getting market state...");
+    // console.log("Creating Phoenix client... Done");
+    // console.log("Getting market state...");
     const marketState = await getMarketState(phoenix, "SOL/USDC");
-    console.log("Getting market state... Done");
-    console.log("Getting user balance...");
+    // console.log("Getting market state... Done");
+    // console.log("Getting user balance...");
     // Check user balance
     const {
       solBalance,
