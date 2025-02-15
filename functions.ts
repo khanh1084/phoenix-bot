@@ -18,7 +18,8 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import BN from "bn.js";
+import { getCancelOrderParamsFromL3Order } from "@ellipsis-labs/phoenix-sdk/src/utils/market";
+import { createCancelMultipleOrdersByIdInstruction } from "@ellipsis-labs/phoenix-sdk/src/instructions/CancelMultipleOrdersById";
 import { toBN, toNum } from "@ellipsis-labs/phoenix-sdk";
 
 export async function createPhoenixClient(
@@ -82,7 +83,31 @@ export async function cancelAllOrders(
   marketState: MarketState,
   traderPublicKey: PublicKey
 ): Promise<TransactionInstruction> {
-  return marketState.createCancelAllOrdersInstruction(traderPublicKey);
+  const currentOrders = await getCurrentOrders(marketState, traderPublicKey);
+  if (currentOrders.length === 0) {
+    throw new Error("No open orders to cancel");
+  }
+
+  const cancelParams = currentOrders.map((order) =>
+    getCancelOrderParamsFromL3Order(order)
+  );
+
+  return createCancelMultipleOrdersByIdInstruction(
+    {
+      phoenixProgram: Phoenix.PROGRAM_ID,
+      logAuthority: Phoenix.getLogAuthority(),
+      market: marketState.address,
+      trader: traderPublicKey,
+      baseAccount: marketState.getBaseAccountKey(traderPublicKey),
+      quoteAccount: marketState.getQuoteAccountKey(traderPublicKey),
+      baseVault: marketState.getBaseVaultKey(),
+      quoteVault: marketState.getQuoteVaultKey(),
+      tokenProgram: TOKEN_PROGRAM_ID,
+    },
+    {
+      params: { orders: cancelParams },
+    }
+  );
 }
 
 export async function getCurrentPrice(
