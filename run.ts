@@ -359,17 +359,28 @@ async function trade(
         )
         .add(placeOrderTx!);
 
-      const placeOrderTxId = await sendAndConfirmTransaction(
-        connection,
-        transaction,
-        [trader],
-        {
-          commitment: "confirmed",
-          preflightCommitment: "confirmed",
+      try {
+        const placeOrderTxId = await sendAndConfirmTransaction(
+          connection,
+          transaction,
+          [trader],
+          {
+            commitment: "confirmed",
+            preflightCommitment: "confirmed",
+          }
+        );
+        console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
+      } catch (error) {
+        console.error(
+          "Error placing order via sendAndConfirmTransaction:",
+          error
+        );
+        if (error instanceof SendTransactionError) {
+          console.error("SendTransactionError message:", error.message);
+          const logs = await error.getLogs(connection);
+          console.error("Detailed Transaction logs:", logs);
         }
-      );
-
-      console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
+      }
       // }
     } catch (error) {
       if (error instanceof SendTransactionError) {
