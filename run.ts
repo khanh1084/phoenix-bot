@@ -229,7 +229,8 @@ async function trade(
       parseFloat((volume / currentPrice).toFixed(8)) *
       10 ** marketState.data.header.baseParams.decimals;
     const quoteAtoms =
-      volume * 10 ** marketState.data.header.quoteParams.decimals;
+      parseFloat(volume.toFixed(8)) *
+      10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
     console.log(
@@ -332,7 +333,7 @@ async function trade(
 
     try {
       // const lots = side === Side.Ask ? numBaseLots : numQuoteLots;
-      const lots = numBaseLots;
+      const lots = numQuoteLots;
       // if (side === Side.Ask) {
       //   await placeOrderWithSol(
       //     connection,
