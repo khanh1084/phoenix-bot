@@ -440,6 +440,7 @@ export async function wrapToken(
   }
 }
 
+// Language: TypeScript
 export async function placeOrderWithSol(
   connection: Connection,
   marketState: MarketState,
@@ -559,57 +560,23 @@ export async function placeOrderWithSol(
   console.log("Order placed successfully. Txid:", txid);
 }
 
+// Language: TypeScript
 export async function placeOrderWithUSD(
   connection: Connection,
   marketState: MarketState,
   trader: Keypair,
-  side: Side,
-  lots: number,
+  side: Side, // For USD orders, set this to Side.Bid
+  lots: number, // Order quantity expressed in quote lots
   priceInTicks: number
 ): Promise<void> {
-  const transaction = new Transaction();
+  console.log(`Placing order with numQuoteLots: ${lots}`);
 
-  // Add compute budget instruction
-  transaction.add(
-    ComputeBudgetProgram.setComputeUnitLimit({
-      units: 1_000_000,
-    })
-  );
-
-  // Add maker setup instructions if needed
-  const setupNewMakerIxs = await Phoenix.getMakerSetupInstructionsForMarket(
-    connection,
-    marketState,
-    trader.publicKey
-  );
-
-  if (setupNewMakerIxs.length > 0) {
-    transaction.add(...setupNewMakerIxs);
-  }
-
-  // Convert quote lots to base lots for bid orders
-  const quoteLotSize = Number(marketState.data.header.quoteLotSize);
-  const baseLotSize = Number(marketState.data.header.baseLotSize);
-  const baseDecimals = marketState.data.header.baseParams.decimals;
-  const quoteDecimals = marketState.data.header.quoteParams.decimals;
-
-  // For bid orders, calculate base lots from quote amount
-  const baseLotsFromQuote = Math.floor(
-    (lots * quoteLotSize * Math.pow(10, baseDecimals)) /
-      (priceInTicks * baseLotSize * Math.pow(10, quoteDecimals))
-  );
-
-  console.log("Quote lot size:", quoteLotSize);
-  console.log("Base lot size:", baseLotSize);
-  console.log("Base decimals:", baseDecimals);
-  console.log("Quote decimals:", quoteDecimals);
-  console.log("Calculated base lots:", baseLotsFromQuote);
-
-  // Create order packet with calculated base lots
+  // Create the order packet.
   const orderPacket = Phoenix.getLimitOrderPacket({
-    side,
+    side, // For USD-based orders, side should be Bid.
     priceInTicks,
-    numBaseLots: baseLotsFromQuote,
+    // For bid orders, numBaseLots is used to represent quote lots.
+    numBaseLots: lots,
     selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
     matchLimit: undefined,
     clientOrderId: 0,
@@ -618,16 +585,37 @@ export async function placeOrderWithUSD(
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
+  console.log("placeOrderWithUSD: Order packet created:", orderPacket);
 
-  transaction.add(
-    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey)
+  // Create the PlaceLimitOrder instruction.
+  const orderIx: TransactionInstruction =
+    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey);
+  console.log("placeOrderWithUSD: PlaceLimitOrderInstruction created.");
+
+  // Construct the transaction.
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash();
+  const transaction = new Transaction({
+    blockhash,
+    lastValidBlockHeight,
+    feePayer: trader.publicKey,
+  })
+    .add(
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: 500000, // Adjust the compute limit as needed.
+      })
+    )
+    .add(orderIx);
+
+  // Send and confirm the transaction.
+  const txid = await sendAndConfirmTransaction(
+    connection,
+    transaction,
+    [trader],
+    {
+      commitment: "confirmed",
+      preflightCommitment: "confirmed",
+    }
   );
-
-  await sendAndConfirmTransaction(connection, transaction, [trader], {
-    skipPreflight: false,
-    commitment: "confirmed",
-    maxRetries: 3,
-  });
-
-  console.log("Order placed successfully");
+  console.log("USD order placed successfully. Transaction ID:", txid);
 }

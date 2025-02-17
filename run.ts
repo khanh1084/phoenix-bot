@@ -332,7 +332,7 @@ async function trade(
 
     try {
       // const lots = side === Side.Ask ? numBaseLots : numQuoteLots;
-      const lots = numQuoteLots;
+      const lots = numBaseLots;
       // if (side === Side.Ask) {
       //   await placeOrderWithSol(
       //     connection,
