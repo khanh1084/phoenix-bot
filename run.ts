@@ -262,8 +262,10 @@ async function trade(
     if (side === Side.Bid) {
       const requiredQuoteUnits =
         numQuoteLots * Number(marketState.data.header.quoteLotSize);
+      console.log(`requiredQuoteUnits: ${requiredQuoteUnits}`);
       const requiredQuoteBalance =
         requiredQuoteUnits / 10 ** marketState.data.header.quoteParams.decimals;
+      console.log(`requiredQuoteBalance: ${requiredQuoteBalance}`);
       if (quoteWalletBalance < requiredQuoteBalance) {
         console.error("Error: Insufficient quote balance to place the order");
         console.log(
