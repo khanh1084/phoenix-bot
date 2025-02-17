@@ -351,7 +351,7 @@ async function trade(
             units: 500000, // Increase the limit as needed
           })
         )
-        .add(placeOrderTx);
+        .add(placeOrderTx!);
 
       const placeOrderTxId = await sendAndConfirmTransaction(
         connection,

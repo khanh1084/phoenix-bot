@@ -54,7 +54,7 @@ export async function placeOrder(
   side: Side,
   numBaseLots: number,
   priceInTicks: number
-): Promise<TransactionInstruction> {
+): Promise<TransactionInstruction | undefined> {
   const traderPublicKey = trader.publicKey;
 
   const orderPacket = Phoenix.getLimitOrderPacket({
@@ -76,8 +76,13 @@ export async function placeOrder(
       traderPublicKey
     );
   } catch (error) {
-    console.error("Error creating place limit order instruction:", error);
-    throw error;
+    if (error instanceof SendTransactionError) {
+      console.error("SendTransactionError:", error.message);
+      const logs = await error.getLogs(connection);
+      console.error("Detailed simulation logs:", logs);
+    } else {
+      console.error("Error placing order:", error);
+    }
   }
 }
 
