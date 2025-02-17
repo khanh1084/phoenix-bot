@@ -333,6 +333,9 @@ async function trade(
       //     priceInTicks
       //   );
       // } else {
+      console.log(
+        `Connection: ${connection}, marketState: ${marketState}, trader: ${trader}, side: ${side}, lots: ${lots}, priceInTicks: ${priceInTicks}`
+      );
       const placeOrderTx = await placeOrder(
         connection,
         marketState,
