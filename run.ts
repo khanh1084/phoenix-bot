@@ -318,53 +318,53 @@ async function trade(
     // }
 
     try {
-      const lots = side !== Side.Bid ? numBaseLots : numQuoteLots;
-      // const lots = numQuoteLots;
-      if (side !== Side.Bid) {
-        await placeOrderWithSol(
-          connection,
-          marketState,
-          trader,
-          side,
-          lots,
-          priceInTicks
-        );
-      } else {
-        const placeOrderTx = await placeOrder(
-          connection,
-          marketState,
-          trader,
-          side,
-          lots,
-          priceInTicks
-        );
+      // const lots = side === Side.Ask ? numBaseLots : numQuoteLots;
+      const lots = numQuoteLots;
+      // if (side === Side.Ask) {
+      //   await placeOrderWithSol(
+      //     connection,
+      //     marketState,
+      //     trader,
+      //     side,
+      //     lots,
+      //     priceInTicks
+      //   );
+      // } else {
+      const placeOrderTx = await placeOrder(
+        connection,
+        marketState,
+        trader,
+        side,
+        lots,
+        priceInTicks
+      );
 
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash();
-        const transaction = new Transaction({
-          blockhash,
-          lastValidBlockHeight,
-          feePayer: trader.publicKey,
-        })
-          .add(
-            ComputeBudgetProgram.setComputeUnitLimit({
-              units: 500000, // Increase the limit as needed
-            })
-          )
-          .add(placeOrderTx);
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
+      const transaction = new Transaction({
+        blockhash,
+        lastValidBlockHeight,
+        feePayer: trader.publicKey,
+      })
+        .add(
+          ComputeBudgetProgram.setComputeUnitLimit({
+            units: 500000, // Increase the limit as needed
+          })
+        )
+        .add(placeOrderTx);
 
-        const placeOrderTxId = await sendAndConfirmTransaction(
-          connection,
-          transaction,
-          [trader],
-          {
-            commitment: "confirmed",
-            preflightCommitment: "confirmed",
-          }
-        );
+      const placeOrderTxId = await sendAndConfirmTransaction(
+        connection,
+        transaction,
+        [trader],
+        {
+          commitment: "confirmed",
+          preflightCommitment: "confirmed",
+        }
+      );
 
-        console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
-      }
+      console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
+      // }
     } catch (error) {
       if (error instanceof SendTransactionError) {
         console.error("SendTransactionError:", error.message);
