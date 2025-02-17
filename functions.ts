@@ -440,7 +440,6 @@ export async function wrapToken(
   }
 }
 
-// Language: TypeScript
 export async function placeOrderWithSol(
   connection: Connection,
   marketState: MarketState,
@@ -560,22 +559,23 @@ export async function placeOrderWithSol(
   console.log("Order placed successfully. Txid:", txid);
 }
 
-// Language: TypeScript
 export async function placeOrderWithUSD(
   connection: Connection,
   marketState: MarketState,
   trader: Keypair,
-  side: Side, // For USD orders, set this to Side.Bid
-  lots: number, // Order quantity expressed in quote lots
+  side: Side,
+  lots: number,
   priceInTicks: number
 ): Promise<void> {
-  console.log(`Placing order with numQuoteLots: ${lots}`);
+  // Add compute budget instruction
+  const transaction = new Transaction().add(
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 })
+  );
 
-  // Create the order packet.
+  // Create the order packet
   const orderPacket = Phoenix.getLimitOrderPacket({
-    side, // For USD-based orders, side should be Bid.
+    side,
     priceInTicks,
-    // For bid orders, numBaseLots is used to represent quote lots.
     numBaseLots: lots,
     selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
     matchLimit: undefined,
@@ -585,37 +585,17 @@ export async function placeOrderWithUSD(
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
-  console.log("placeOrderWithUSD: Order packet created:", orderPacket);
 
-  // Create the PlaceLimitOrder instruction.
-  const orderIx: TransactionInstruction =
-    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey);
-  console.log("placeOrderWithUSD: PlaceLimitOrderInstruction created.");
-
-  // Construct the transaction.
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash();
-  const transaction = new Transaction({
-    blockhash,
-    lastValidBlockHeight,
-    feePayer: trader.publicKey,
-  })
-    .add(
-      ComputeBudgetProgram.setComputeUnitLimit({
-        units: 500000, // Adjust the compute limit as needed.
-      })
-    )
-    .add(orderIx);
-
-  // Send and confirm the transaction.
-  const txid = await sendAndConfirmTransaction(
-    connection,
-    transaction,
-    [trader],
-    {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    }
+  // Add the limit order instruction
+  transaction.add(
+    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey)
   );
-  console.log("USD order placed successfully. Transaction ID:", txid);
+
+  // Send transaction
+  await sendAndConfirmTransaction(connection, transaction, [trader], {
+    skipPreflight: true,
+    commitment: "confirmed",
+  });
+
+  console.log("Order placed successfully.");
 }
