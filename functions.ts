@@ -56,26 +56,44 @@ export async function placeOrder(
   priceInTicks: number
 ): Promise<TransactionInstruction | undefined> {
   const traderPublicKey = trader.publicKey;
+  console.log("placeOrder: Starting order placement process.");
 
-  const orderPacket = Phoenix.getLimitOrderPacket({
-    side,
-    priceInTicks,
-    numBaseLots,
-    selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
-    matchLimit: undefined,
-    clientOrderId: 0,
-    useOnlyDepositedFunds: false,
-    lastValidSlot: (await connection.getSlot()) + 100,
-    lastValidUnixTimestampInSeconds: undefined,
-    failSilientlyOnInsufficientFunds: false,
-  });
-
+  // Step 1: Create the order packet
+  let orderPacket;
   try {
-    return marketState.createPlaceLimitOrderInstruction(
+    orderPacket = Phoenix.getLimitOrderPacket({
+      side,
+      priceInTicks,
+      numBaseLots,
+      selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
+      matchLimit: undefined,
+      clientOrderId: 0,
+      useOnlyDepositedFunds: false,
+      lastValidSlot: (await connection.getSlot()) + 100,
+      lastValidUnixTimestampInSeconds: undefined,
+      failSilientlyOnInsufficientFunds: false,
+    });
+    console.log("placeOrder: Order packet created:", orderPacket);
+  } catch (error) {
+    console.error("placeOrder: Error creating order packet:", error);
+    return;
+  }
+
+  // Step 2: Create the place limit order instruction
+  let instruction: TransactionInstruction | undefined;
+  try {
+    console.log(
+      "placeOrder: Attempting to create PlaceLimitOrderInstruction with traderPublicKey:",
+      traderPublicKey.toString()
+    );
+    instruction = marketState.createPlaceLimitOrderInstruction(
       orderPacket,
       traderPublicKey
     );
+    console.log("placeOrder: Successfully created PlaceLimitOrderInstruction.");
+    return instruction;
   } catch (error) {
+    console.error("placeOrder: Error during createPlaceLimitOrderInstruction.");
     if (error instanceof SendTransactionError) {
       console.error("SendTransactionError:", error.message);
       const logs = await error.getLogs(connection);
