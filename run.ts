@@ -260,6 +260,7 @@ async function trade(
       `Placing order with side: ${Side[side]}, volume: ${volume} USD, priceInTicks: ${priceInTicks}`
     );
 
+    // Check if the balance is sufficient
     if (side === Side.Bid) {
       const requiredQuoteUnits =
         numQuoteLots * Number(marketState.data.header.quoteLotSize);
@@ -272,11 +273,15 @@ async function trade(
         requiredQuoteUnits / 10 ** marketState.data.header.quoteParams.decimals;
       console.log(`requiredQuoteBalance: ${requiredQuoteBalance}`);
       console.log(`quoteWalletBalance: ${quoteWalletBalance}`);
+
       if (quoteWalletBalance < requiredQuoteBalance) {
         console.error("Error: Insufficient quote balance to place the order");
         console.log(
           `Wallet quote balance: ${quoteWalletBalance}, required: ${requiredQuoteBalance}`
         );
+        // Skip placing the order if funds are insufficient.
+        await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+        continue;
       }
     }
 
