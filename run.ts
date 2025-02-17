@@ -18,6 +18,7 @@ import {
   checkUserBalance,
   wrapToken,
   placeOrderWithSol,
+  placeOrderWithUSD,
 } from "./functions";
 import { getPrivateKeysFromEnv } from "./env";
 import { Side, MarketState } from "@ellipsis-labs/phoenix-sdk";
@@ -337,54 +338,14 @@ async function trade(
       //     priceInTicks
       //   );
       // } else {
-      console.log(
-        `Connection: ${connection}, marketState: ${marketState}, trader: ${trader}, side: ${side}, lots: ${lots}, priceInTicks: ${priceInTicks}`
-      );
-      const placeOrderTx = await placeOrder(
+      await placeOrderWithUSD(
         connection,
         marketState,
         trader,
         side,
-        lots,
+        volume,
         priceInTicks
       );
-
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash();
-      const transaction = new Transaction({
-        blockhash,
-        lastValidBlockHeight,
-        feePayer: trader.publicKey,
-      })
-        .add(
-          ComputeBudgetProgram.setComputeUnitLimit({
-            units: 500000, // Increase the limit as needed
-          })
-        )
-        .add(placeOrderTx!);
-
-      try {
-        const placeOrderTxId = await sendAndConfirmTransaction(
-          connection,
-          transaction,
-          [trader],
-          {
-            commitment: "confirmed",
-            preflightCommitment: "confirmed",
-          }
-        );
-        console.log(`Order placed. Transaction ID: ${placeOrderTxId}`);
-      } catch (error) {
-        console.error(
-          "Error placing order via sendAndConfirmTransaction:",
-          error
-        );
-        if (error instanceof SendTransactionError) {
-          console.error("SendTransactionError message:", error.message);
-          const logs = await error.getLogs(connection);
-          console.error("Detailed Transaction logs:", logs);
-        }
-      }
       // }
     } catch (error) {
       if (error instanceof SendTransactionError) {

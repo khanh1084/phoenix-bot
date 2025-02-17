@@ -559,3 +559,78 @@ export async function placeOrderWithSol(
   );
   console.log("Order placed successfully. Txid:", txid);
 }
+
+export async function placeOrderWithUSD(
+  connection: Connection,
+  marketState: MarketState,
+  trader: Keypair,
+  side: Side, // For USD orders, set this to Side.Bid
+  volume: number, // Volume expressed in USD amount
+  priceInTicks: number
+): Promise<void> {
+  // Convert volume in USD to quote atoms using market's quote token decimals
+  const quoteDecimals = marketState.data.header.quoteParams.decimals;
+  const quoteAtoms = volume * Math.pow(10, quoteDecimals);
+  // Convert quote atoms to quote lots using market conversion
+  const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
+  console.log(
+    `Calculated numQuoteLots: ${numQuoteLots} for volume: ${volume} USD`
+  );
+
+  // Create the order packet.
+  const orderPacket = Phoenix.getLimitOrderPacket({
+    side, // For USD-based orders, side should be Bid.
+    priceInTicks,
+    // Even though the parameter is named numBaseLots, for Bid orders it's used to represent quote lots.
+    numBaseLots: numQuoteLots,
+    selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
+    matchLimit: undefined,
+    clientOrderId: 0,
+    useOnlyDepositedFunds: false,
+    lastValidSlot: (await connection.getSlot()) + 100,
+    lastValidUnixTimestampInSeconds: undefined,
+    failSilientlyOnInsufficientFunds: false,
+  });
+  console.log("placeOrderWithUSD: Order packet created:", orderPacket);
+
+  // Create the PlaceLimitOrder instruction.
+  const orderIx: TransactionInstruction =
+    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey);
+  console.log("placeOrderWithUSD: PlaceLimitOrderInstruction created.");
+
+  // Construct the transaction.
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash();
+  const transaction = new Transaction({
+    blockhash,
+    lastValidBlockHeight,
+    feePayer: trader.publicKey,
+  })
+    .add(
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: 500000, // Adjust the compute limit as needed.
+      })
+    )
+    .add(orderIx);
+
+  // Send and confirm the transaction.
+  try {
+    const txid = await sendAndConfirmTransaction(
+      connection,
+      transaction,
+      [trader],
+      {
+        commitment: "confirmed",
+        preflightCommitment: "confirmed",
+      }
+    );
+    console.log("USD order placed successfully. Transaction ID:", txid);
+  } catch (error) {
+    console.error("Error placing USD order:", error);
+    if (error instanceof SendTransactionError) {
+      console.error("SendTransactionError message:", error.message);
+      const logs = await error.getLogs(connection);
+      console.error("Detailed Transaction logs:", logs);
+    }
+  }
+}
