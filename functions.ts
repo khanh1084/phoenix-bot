@@ -569,7 +569,7 @@ export async function placeOrderWithUSD(
 ): Promise<void> {
   const transaction = new Transaction();
 
-  // Add compute budget instruction first
+  // Add compute budget instruction
   transaction.add(
     ComputeBudgetProgram.setComputeUnitLimit({
       units: 1_000_000,
@@ -587,11 +587,25 @@ export async function placeOrderWithUSD(
     transaction.add(...setupNewMakerIxs);
   }
 
-  // Create and add the order packet/instruction
+  // Convert quote lots to base lots for bid orders
+  const quoteLotSize = Number(marketState.data.header.quoteLotSize);
+  const baseLotSize = Number(marketState.data.header.baseLotSize);
+  const baseDecimals = marketState.data.header.baseParams.decimals;
+  const quoteDecimals = marketState.data.header.quoteParams.decimals;
+
+  // For bid orders, calculate base lots from quote amount
+  const baseLotsFromQuote = Math.floor(
+    (lots * quoteLotSize * Math.pow(10, baseDecimals)) /
+      (priceInTicks * baseLotSize * Math.pow(10, quoteDecimals))
+  );
+
+  console.log("Base lots from quote:", baseLotsFromQuote);
+
+  // Create order packet with calculated base lots
   const orderPacket = Phoenix.getLimitOrderPacket({
     side,
     priceInTicks,
-    numBaseLots: lots,
+    numBaseLots: baseLotsFromQuote,
     selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
     matchLimit: undefined,
     clientOrderId: 0,
