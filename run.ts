@@ -262,7 +262,11 @@ async function trade(
     if (side === Side.Bid) {
       const requiredQuoteUnits =
         numQuoteLots * Number(marketState.data.header.quoteLotSize);
-      console.log(`requiredQuoteUnits: ${requiredQuoteUnits}`);
+      console.log(
+        `requiredQuoteUnits: ${requiredQuoteUnits}, ${Number(
+          marketState.data.header.quoteLotSize
+        )}`
+      );
       const requiredQuoteBalance =
         requiredQuoteUnits / 10 ** marketState.data.header.quoteParams.decimals;
       console.log(`requiredQuoteBalance: ${requiredQuoteBalance}`);
