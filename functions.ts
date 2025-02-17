@@ -57,6 +57,9 @@ export async function placeOrder(
 ): Promise<TransactionInstruction | undefined> {
   const traderPublicKey = trader.publicKey;
   console.log("placeOrder: Starting order placement process.");
+  console.log(
+    `placeOrder: Parameters - side: ${side}, priceInTicks: ${priceInTicks}, numBaseLots: ${numBaseLots}`
+  );
 
   // Step 1: Create the order packet
   let orderPacket;
@@ -74,6 +77,9 @@ export async function placeOrder(
       failSilientlyOnInsufficientFunds: false,
     });
     console.log("placeOrder: Order packet created:", orderPacket);
+    console.log(
+      `placeOrder: Order packet details - side: ${orderPacket.side}, priceInTicks: ${orderPacket.priceInTicks}, numBaseLots: ${orderPacket.numBaseLots}`
+    );
   } catch (error) {
     console.error("placeOrder: Error creating order packet:", error);
     return;
