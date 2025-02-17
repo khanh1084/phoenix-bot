@@ -343,7 +343,7 @@ async function trade(
         marketState,
         trader,
         side,
-        volume,
+        lots,
         priceInTicks
       );
       // }

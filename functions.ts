@@ -560,29 +560,23 @@ export async function placeOrderWithSol(
   console.log("Order placed successfully. Txid:", txid);
 }
 
+// Language: TypeScript
 export async function placeOrderWithUSD(
   connection: Connection,
   marketState: MarketState,
   trader: Keypair,
   side: Side, // For USD orders, set this to Side.Bid
-  volume: number, // Volume expressed in USD amount
+  lots: number, // Order quantity expressed in quote lots
   priceInTicks: number
 ): Promise<void> {
-  // Convert volume in USD to quote atoms using market's quote token decimals
-  const quoteDecimals = marketState.data.header.quoteParams.decimals;
-  const quoteAtoms = volume * Math.pow(10, quoteDecimals);
-  // Convert quote atoms to quote lots using market conversion
-  const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
-  console.log(
-    `Calculated numQuoteLots: ${numQuoteLots} for volume: ${volume} USD`
-  );
+  console.log(`Placing order with numQuoteLots: ${lots}`);
 
   // Create the order packet.
   const orderPacket = Phoenix.getLimitOrderPacket({
     side, // For USD-based orders, side should be Bid.
     priceInTicks,
-    // Even though the parameter is named numBaseLots, for Bid orders it's used to represent quote lots.
-    numBaseLots: numQuoteLots,
+    // For bid orders, numBaseLots is used to represent quote lots.
+    numBaseLots: lots,
     selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
     matchLimit: undefined,
     clientOrderId: 0,
