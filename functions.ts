@@ -599,7 +599,11 @@ export async function placeOrderWithUSD(
       (priceInTicks * baseLotSize * Math.pow(10, quoteDecimals))
   );
 
-  console.log("Base lots from quote:", baseLotsFromQuote);
+  console.log("Quote lot size:", quoteLotSize);
+  console.log("Base lot size:", baseLotSize);
+  console.log("Base decimals:", baseDecimals);
+  console.log("Quote decimals:", quoteDecimals);
+  console.log("Calculated base lots:", baseLotsFromQuote);
 
   // Create order packet with calculated base lots
   const orderPacket = Phoenix.getLimitOrderPacket({
