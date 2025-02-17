@@ -392,13 +392,13 @@ async function main() {
       totalQuoteBalance,
     } = await checkUserBalance(connection, marketState, trader);
 
-    // console.log("SOL balance: ", solBalance);
-    // console.log("Base wallet balance: ", baseWalletBalance);
-    // console.log("Quote wallet balance: ", quoteWalletBalance);
-    // console.log("Base open orders balance: ", baseOpenOrdersBalance);
-    // console.log("Quote open orders balance: ", quoteOpenOrdersBalance);
-    // console.log("Total base balance: ", totalBaseBalance);
-    // console.log("Total quote balance: ", totalQuoteBalance);
+    console.log("SOL balance: ", solBalance);
+    console.log("Base wallet balance: ", baseWalletBalance);
+    console.log("Quote wallet balance: ", quoteWalletBalance);
+    console.log("Base open orders balance: ", baseOpenOrdersBalance);
+    console.log("Quote open orders balance: ", quoteOpenOrdersBalance);
+    console.log("Total base balance: ", totalBaseBalance);
+    console.log("Total quote balance: ", totalQuoteBalance);
 
     const symbol = "SOLUSDC";
     const interval = "5m";
@@ -408,6 +408,7 @@ async function main() {
     initCandleStickWS(symbol, interval);
     initPriceWS(symbol);
 
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     // Trade
     await trade(
       connection,
