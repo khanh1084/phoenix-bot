@@ -614,23 +614,14 @@ export async function placeOrderWithUSD(
     .add(orderIx);
 
   // Send and confirm the transaction.
-  try {
-    const txid = await sendAndConfirmTransaction(
-      connection,
-      transaction,
-      [trader],
-      {
-        commitment: "confirmed",
-        preflightCommitment: "confirmed",
-      }
-    );
-    console.log("USD order placed successfully. Transaction ID:", txid);
-  } catch (error) {
-    console.error("Error placing USD order:", error);
-    if (error instanceof SendTransactionError) {
-      console.error("SendTransactionError message:", error.message);
-      const logs = await error.getLogs(connection);
-      console.error("Detailed Transaction logs:", logs);
+  const txid = await sendAndConfirmTransaction(
+    connection,
+    transaction,
+    [trader],
+    {
+      commitment: "confirmed",
+      preflightCommitment: "confirmed",
     }
-  }
+  );
+  console.log("USD order placed successfully. Transaction ID:", txid);
 }
