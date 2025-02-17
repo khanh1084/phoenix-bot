@@ -3,7 +3,7 @@ export const config = {
     buy: "BUY",
     sell: "SELL",
   },
-  volume: 0.2, // Adjust volume as needed
+  volume: 0.02, // Adjust volume as needed
   percentage: 10, // Adjust percentage as needed
   sideway: true, // Set to true if the market is sideway
   cancelTime: 60, // Time in seconds to cancel orders
