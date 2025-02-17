@@ -567,12 +567,18 @@ export async function placeOrderWithUSD(
   lots: number,
   priceInTicks: number
 ): Promise<void> {
-  // Add compute budget instruction
-  const transaction = new Transaction().add(
-    ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 })
+  // Add compute budget instruction with higher units
+  const transaction = new Transaction();
+
+  // Add compute budget instruction first
+  transaction.add(
+    ComputeBudgetProgram.setComputeUnitLimit({
+      units: 1_000_000, // Increased from 500,000
+    })
   );
 
   // Create the order packet
+  console.log("Creating order packet...");
   const orderPacket = Phoenix.getLimitOrderPacket({
     side,
     priceInTicks,
@@ -586,16 +592,19 @@ export async function placeOrderWithUSD(
     failSilientlyOnInsufficientFunds: false,
   });
 
+  console.log("Adding place order instruction...");
   // Add the limit order instruction
   transaction.add(
     marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey)
   );
 
-  // Send transaction
+  // Send with higher priority and preflight checks
+  console.log("Sending transaction...");
   await sendAndConfirmTransaction(connection, transaction, [trader], {
-    skipPreflight: true,
+    skipPreflight: false, // Enable preflight checks
     commitment: "confirmed",
+    maxRetries: 3,
   });
 
-  console.log("Order placed successfully.");
+  console.log("Order placed successfully");
 }
