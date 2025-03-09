@@ -52,41 +52,57 @@ export async function placeOrder(
   marketState: MarketState,
   trader: Keypair,
   side: Side,
-  numBaseLots: number,
+  numLots: number, // This will be base lots for Ask orders, quote lots for Bid orders
   priceInTicks: number
-): Promise<TransactionInstruction | undefined> {
+): Promise<string | undefined> {
   const traderPublicKey = trader.publicKey;
   console.log("placeOrder: Starting order placement process.");
   console.log(
-    `placeOrder: Parameters - side: ${side}, priceInTicks: ${priceInTicks}, numBaseLots: ${numBaseLots}`
+    `placeOrder: Parameters - side: ${side}, priceInTicks: ${priceInTicks}, numLots: ${numLots}`
   );
 
-  // Step 1: Create the order packet
+  // Step 1: Create the order packet with the correct lot configuration
   let orderPacket;
   try {
-    orderPacket = Phoenix.getLimitOrderPacket({
-      side,
-      priceInTicks,
-      numBaseLots,
-      selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
-      matchLimit: undefined,
-      clientOrderId: 0,
-      useOnlyDepositedFunds: false,
-      lastValidSlot: (await connection.getSlot()) + 100,
-      lastValidUnixTimestampInSeconds: undefined,
-      failSilientlyOnInsufficientFunds: false,
-    });
-    console.log("placeOrder: Order packet created:", orderPacket);
-    console.log(
-      `placeOrder: Order packet details - side: ${orderPacket.side}, priceInTicks: ${orderPacket.priceInTicks}, numBaseLots: ${orderPacket.numBaseLots}`
-    );
+    // Create different order packets based on side
+    if (side === Side.Bid) {
+      // For bid orders, use the quote lots in the PlaceOrderWithFees method
+      orderPacket = Phoenix.getLimitOrderPacket({
+        side,
+        priceInTicks,
+        numBaseLots: numLots, // Using quote lots for bid orders
+        selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
+        matchLimit: undefined,
+        clientOrderId: 0,
+        useOnlyDepositedFunds: false,
+        lastValidSlot: (await connection.getSlot()) + 100,
+        lastValidUnixTimestampInSeconds: undefined,
+        failSilientlyOnInsufficientFunds: false,
+      });
+    } else {
+      // For ask orders, use base lots
+      orderPacket = Phoenix.getLimitOrderPacket({
+        side,
+        priceInTicks,
+        numBaseLots: numLots,
+        selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
+        matchLimit: undefined,
+        clientOrderId: 0,
+        useOnlyDepositedFunds: false,
+        lastValidSlot: (await connection.getSlot()) + 100,
+        lastValidUnixTimestampInSeconds: undefined,
+        failSilientlyOnInsufficientFunds: false,
+      });
+    }
+
+    // console.log("placeOrder: Order packet created:", orderPacket);
   } catch (error) {
     console.error("placeOrder: Error creating order packet:", error);
     return;
   }
 
   // Step 2: Create the place limit order instruction
-  let instruction: TransactionInstruction | undefined;
+  let instruction: TransactionInstruction;
   try {
     console.log(
       "placeOrder: Attempting to create PlaceLimitOrderInstruction with traderPublicKey:",
@@ -97,9 +113,38 @@ export async function placeOrder(
       traderPublicKey
     );
     console.log("placeOrder: Successfully created PlaceLimitOrderInstruction.");
-    return instruction;
+
+    // Step 3: Create a transaction and add the instruction
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash();
+    const transaction = new Transaction({
+      blockhash,
+      lastValidBlockHeight,
+      feePayer: trader.publicKey,
+    });
+
+    // Add compute budget instruction to ensure enough compute units
+    transaction.add(
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 })
+    );
+
+    // Add the limit order instruction
+    transaction.add(instruction);
+
+    // Step 4: Send and confirm the transaction
+    const txid = await sendAndConfirmTransaction(
+      connection,
+      transaction,
+      [trader],
+      {
+        commitment: "confirmed",
+        preflightCommitment: "confirmed",
+      }
+    );
+    console.log("Order placed successfully. Transaction ID:", txid);
+    return txid;
   } catch (error) {
-    console.error("placeOrder: Error during createPlaceLimitOrderInstruction.");
+    console.error("placeOrder: Error during transaction submission.");
     if (error instanceof SendTransactionError) {
       console.error("SendTransactionError:", error.message);
       const logs = await error.getLogs(connection);
@@ -529,7 +574,7 @@ export async function placeOrderWithSol(
     matchLimit: undefined,
     clientOrderId: 0,
     useOnlyDepositedFunds: false,
-    lastValidSlot: (await connection.getSlot()) + 100,
+    lastValidSlot: (await connection.getSlot()) + 150,
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
@@ -566,17 +611,32 @@ export async function placeOrderWithUSD(
   marketState: MarketState,
   trader: Keypair,
   side: Side, // For USD orders, set this to Side.Bid
-  lots: number, // Order quantity expressed in quote lots
-  priceInTicks: number
+  quoteLots: number, // Order quantity expressed in quote lots
+  priceInTicks: number,
+  currentPrice: number // Add current price as parameter
 ): Promise<void> {
-  console.log(`Placing order with numQuoteLots: ${lots}`);
+  // First convert quoteLots to actual USDC amount
+  const quoteUnits = quoteLots * Number(marketState.data.header.quoteLotSize);
+  const quoteAmount =
+    quoteUnits / 10 ** marketState.data.header.quoteParams.decimals;
 
-  // Create the order packet.
+  // Then calculate equivalent SOL amount using passed-in currentPrice
+  const baseAmount = quoteAmount / currentPrice;
+
+  // Convert base amount to base atoms then to base lots
+  const baseAtoms =
+    baseAmount * 10 ** marketState.data.header.baseParams.decimals;
+  const baseLots = marketState.baseAtomsToBaseLots(baseAtoms);
+
+  // console.log(
+  //   `Converting ${quoteAmount} USDC to ${baseAmount} SOL (${baseLots} base lots) at price ${currentPrice}`
+  // );
+
+  // Create order packet with proper base lots
   const orderPacket = Phoenix.getLimitOrderPacket({
-    side, // For USD-based orders, side should be Bid.
+    side,
     priceInTicks,
-    // For bid orders, numBaseLots is used to represent quote lots.
-    numBaseLots: lots,
+    numBaseLots: baseLots, // Use converted base lots
     selfTradeBehavior: Phoenix.SelfTradeBehavior.DecrementTake,
     matchLimit: undefined,
     clientOrderId: 0,
@@ -585,37 +645,141 @@ export async function placeOrderWithUSD(
     lastValidUnixTimestampInSeconds: undefined,
     failSilientlyOnInsufficientFunds: false,
   });
-  console.log("placeOrderWithUSD: Order packet created:", orderPacket);
+  // console.log("placeOrderWithUSD: Order packet created:", orderPacket);
 
-  // Create the PlaceLimitOrder instruction.
-  const orderIx: TransactionInstruction =
-    marketState.createPlaceLimitOrderInstruction(orderPacket, trader.publicKey);
-  console.log("placeOrderWithUSD: PlaceLimitOrderInstruction created.");
+  // Rest of the function stays the same
+  const orderIx = marketState.createPlaceLimitOrderInstruction(
+    orderPacket,
+    trader.publicKey
+  );
 
-  // Construct the transaction.
+  // After creating the instruction, add this:
   const { blockhash, lastValidBlockHeight } =
     await connection.getLatestBlockhash();
   const transaction = new Transaction({
     blockhash,
     lastValidBlockHeight,
     feePayer: trader.publicKey,
-  })
-    .add(
-      ComputeBudgetProgram.setComputeUnitLimit({
-        units: 500000, // Adjust the compute limit as needed.
-      })
-    )
-    .add(orderIx);
+  });
 
-  // Send and confirm the transaction.
-  const txid = await sendAndConfirmTransaction(
-    connection,
-    transaction,
-    [trader],
-    {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
+  // Add compute budget instruction
+  transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 }));
+
+  // Add the order instruction
+  transaction.add(orderIx);
+
+  // Send and confirm the transaction
+  try {
+    const txid = await sendAndConfirmTransaction(
+      connection,
+      transaction,
+      [trader],
+      {
+        commitment: "confirmed",
+        preflightCommitment: "confirmed",
+      }
+    );
+    console.log("USD order placed successfully. Transaction ID:", txid);
+  } catch (error) {
+    console.error("Error sending USD order transaction:", error);
+    throw error;
+  }
+}
+
+export function calculateMinimumOrderVolume(
+  marketState: MarketState,
+  currentPrice: number
+): number {
+  const baseLotSize = Number(marketState.data.header.baseLotSize);
+  const baseDecimals = marketState.data.header.baseParams.decimals;
+  const minimumBaseAmount = baseLotSize / 10 ** baseDecimals;
+  const minimumQuoteAmount = minimumBaseAmount * currentPrice;
+  return minimumQuoteAmount * 1.05;
+}
+
+export async function cancelOrdersOneByOne(
+  connection: Connection,
+  marketState: MarketState,
+  trader: Keypair
+): Promise<void> {
+  const orders = await getCurrentOrders(marketState, trader.publicKey);
+  console.log(`Attempting to cancel ${orders.length} orders...`);
+
+  for (const order of orders) {
+    try {
+      const cancelParams = getCancelOrderParamsFromL3Order(order);
+
+      // Create the cancel instruction for this order
+      const cancelIx = createCancelMultipleOrdersByIdInstruction(
+        {
+          phoenixProgram: Phoenix.PROGRAM_ID,
+          logAuthority: Phoenix.getLogAuthority(),
+          market: marketState.address,
+          trader: trader.publicKey,
+          baseAccount: marketState.getBaseAccountKey(trader.publicKey),
+          quoteAccount: marketState.getQuoteAccountKey(trader.publicKey),
+          baseVault: marketState.getBaseVaultKey(),
+          quoteVault: marketState.getQuoteVaultKey(),
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        {
+          params: { orders: [cancelParams] },
+        }
+      );
+
+      // Get a fresh blockhash for each transaction
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash("confirmed");
+
+      const tx = new Transaction({
+        feePayer: trader.publicKey,
+        blockhash,
+        lastValidBlockHeight,
+      });
+
+      // Add the instruction
+      tx.add(cancelIx);
+
+      await sendAndConfirmTransaction(connection, tx, [trader], {
+        commitment: "confirmed",
+        preflightCommitment: "confirmed",
+      });
+
+      console.log(`Canceled order: ${order.orderSequenceNumber}`);
+
+      // Longer delay between cancellations to allow the market to update
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+
+      // Reload market state after each cancellation
+      await marketState.reloadFromNetwork(connection);
+    } catch (err) {
+      console.error(
+        `Failed to cancel order: ${order.orderSequenceNumber}`,
+        err
+      );
     }
+  }
+
+  // Hard refresh the market state by recreating it
+  console.log("Performing hard refresh of market state...");
+
+  // Add this code to force a complete refresh of the Phoenix client
+  const phoenixClient = await createPhoenixClient(connection);
+  const refreshedMarketState = phoenixClient.marketStates.get(
+    marketState.address.toString()
   );
-  console.log("USD order placed successfully. Transaction ID:", txid);
+  if (refreshedMarketState) {
+    // Use refreshedMarketState instead of the original marketState
+    const finalOrderCheck = await getCurrentOrders(
+      refreshedMarketState,
+      trader.publicKey
+    );
+
+    console.log(`After hard refresh: ${finalOrderCheck.length} orders remain.`);
+    if (finalOrderCheck.length > 0) {
+      console.log(
+        "These are likely stale cache entries. Orders were canceled on-chain."
+      );
+    }
+  }
 }

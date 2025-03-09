@@ -19,6 +19,7 @@ import {
   wrapToken,
   placeOrderWithSol,
   placeOrderWithUSD,
+  calculateMinimumOrderVolume,
 } from "./functions";
 import { getPrivateKeysFromEnv } from "./env";
 import { Side, MarketState } from "@ellipsis-labs/phoenix-sdk";
@@ -48,18 +49,19 @@ async function trade(
         marketState,
         trader.publicKey
       );
-      console.log("Current orders count:", currentOrders.length);
-      currentOrders.forEach((order, i) => {
-        console.log(`Order ${i + 1}:`, {
-          orderSequenceNumber: order.orderSequenceNumber.toString(),
-          priceInTicks: order.priceInTicks.toString(),
-          side: Side[order.side],
-          sizeInBaseLots: order.sizeInBaseLots.toString(),
-          lastValidSlot: order.lastValidSlot.toString(),
-          lastValidUnixTimestampInSeconds:
-            order.lastValidUnixTimestampInSeconds.toString(),
-        });
-      });
+      // console.log("Current orders count:", currentOrders.length);
+      // currentOrders.forEach((order, i) => {
+      //   console.log(`Order ${i + 1}:`, {
+      //     orderSequenceNumber: order.orderSequenceNumber.toString(),
+      //     priceInTicks: order.priceInTicks.toString(),
+      //     side: Side[order.side],
+      //     sizeInBaseLots: order.sizeInBaseLots.toString(),
+      //     lastValidSlot: order.lastValidSlot.toString(),
+      //     lastValidUnixTimestampInSeconds:
+      //       order.lastValidUnixTimestampInSeconds.toString(),
+      //   });
+      // });
+      console.log("Canceling all orders...");
       if (currentOrders.length > 0) {
         let cancelAllOrdersTxId;
         try {
@@ -87,10 +89,6 @@ async function trade(
               preflightCommitment: "confirmed",
             }
           );
-          // console.log(
-          //   "All orders canceled. Transaction ID: ",
-          //   cancelAllOrdersTxId
-          // );
           await new Promise((resolve) => setTimeout(resolve, 5000));
           await marketState.reloadFromNetwork(connection);
           // Verify that all orders are canceled
@@ -99,9 +97,9 @@ async function trade(
             trader.publicKey
           );
           // console.log("Updated orders after cancel:", updatedOrders);
-          if (updatedOrders.length > 0) {
-            console.error("Error: Some orders were not canceled.");
-          }
+          // if (updatedOrders.length > 0) {
+          //   console.error("Error: Some orders were not canceled.");
+          // }
         } catch (error) {
           if (error instanceof SendTransactionError) {
             console.error("SendTransactionError:", error.message);
@@ -143,102 +141,119 @@ async function trade(
 
     // Always place limit orders based on the current price and percentage
 
-    // if (rsi > 75) {
-    //   console.log(`RSI is above 75. Placing SELL limit order for ${pair}.`);
-    //   side = Side.Ask;
-    //   priceInTicks = marketState.floatPriceToTicks(
-    //     currentPrice * (1 + percentage / 100)
-    //   );
-    // } else if (rsi < 25) {
-    //   console.log(`RSI is below 25. Placing BUY limit order for ${pair}.`);
-    //   side = Side.Bid;
-    //   priceInTicks = marketState.floatPriceToTicks(
-    //     currentPrice * (1 - percentage / 100)
-    //   );
-    // } else {
-    //   if (sideway) {
-    //     if (rsi >= Math.min(wma45, ema9) && rsi <= Math.max(wma45, ema9)) {
-    //       console.log(`RSI is within the sideway range, ${pair}.`);
-    //       if (wma45 < config.WMAlimitBuy) {
-    //         console.log(
-    //           `WMA45 is below the buy limit. Placing BUY limit order for ${pair}.\n`
-    //         );
-    //         side = Side.Bid;
-    //         priceInTicks = marketState.floatPriceToTicks(
-    //           currentPrice * (1 - percentage / 100)
-    //         );
-    //       } else {
-    //         console.log(
-    //           `WMA45 is not below the buy limit. No BUY limit order placed for ${pair}.\n`
-    //         );
-    //         await new Promise((resolve) =>
-    //           setTimeout(resolve, timeCancel * 1000)
-    //         );
-    //         continue;
-    //       }
-    //     } else if (rsi > Math.max(wma45, ema9) && wma45 > config.WMAlimitSell) {
-    //       console.log(
-    //         `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL limit order for ${pair}.\n`
-    //       );
-    //       side = Side.Ask;
-    //       priceInTicks = marketState.floatPriceToTicks(
-    //         currentPrice * (1 + percentage / 100)
-    //       );
-    //     } else {
-    //       console.log(
-    //         `RSI is not within the sideway range and no conditions met for placing orders for ${pair}.\n`
-    //       );
-    //       await new Promise((resolve) =>
-    //         setTimeout(resolve, timeCancel * 1000)
-    //       );
-    //       continue;
-    //     }
-    //   } else {
-    //     if (wma45 < config.WMAlimitBuy && rsi < wma45) {
-    //       console.log(
-    //         `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY limit order for ${pair}.\n`
-    //       );
-    //       side = Side.Bid;
-    //       priceInTicks = marketState.floatPriceToTicks(
-    //         currentPrice * (1 - percentage / 100)
-    //       );
-    //     } else if (wma45 > config.WMAlimitSell && rsi > wma45) {
-    //       console.log(
-    //         `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL limit order for ${pair}.\n`
-    //       );
-    //       side = Side.Ask;
-    //       priceInTicks = marketState.floatPriceToTicks(
-    //         currentPrice * (1 + percentage / 100)
-    //       );
-    //     } else {
-    //       console.log(`No conditions met for placing orders, ${pair}.\n`);
-    //       await new Promise((resolve) =>
-    //         setTimeout(resolve, timeCancel * 1000)
-    //       );
-    //       continue;
-    //     }
-    //   }
-    // }
+    if (rsi > 75) {
+      console.log(`RSI is above 75. Placing SELL limit order for ${pair}.`);
+      side = Side.Ask;
+      priceInTicks = marketState.floatPriceToTicks(
+        currentPrice * (1 + percentage / 100)
+      );
+    } else if (rsi < 25) {
+      console.log(`RSI is below 25. Placing BUY limit order for ${pair}.`);
+      side = Side.Bid;
+      priceInTicks = marketState.floatPriceToTicks(
+        currentPrice * (1 - percentage / 100)
+      );
+    } else {
+      if (sideway) {
+        if (rsi >= Math.min(wma45, ema9) && rsi <= Math.max(wma45, ema9)) {
+          console.log(`RSI is within the sideway range, ${pair}.`);
+          if (wma45 < config.WMAlimitBuy) {
+            console.log(
+              `WMA45 is below the buy limit. Placing BUY limit order for ${pair}.\n`
+            );
+            side = Side.Bid;
+            priceInTicks = marketState.floatPriceToTicks(
+              currentPrice * (1 - percentage / 100)
+            );
+          } else {
+            console.log(
+              `WMA45 is not below the buy limit. No BUY limit order placed for ${pair}.\n`
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, timeCancel * 1000)
+            );
+            continue;
+          }
+        } else if (rsi > Math.max(wma45, ema9) && wma45 > config.WMAlimitSell) {
+          console.log(
+            `RSI is above the sideway range and WMA45 is above the sell limit. Placing SELL limit order for ${pair}.\n`
+          );
+          side = Side.Ask;
+          priceInTicks = marketState.floatPriceToTicks(
+            currentPrice * (1 + percentage / 100)
+          );
+        } else {
+          console.log(
+            `RSI is not within the sideway range and no conditions met for placing orders for ${pair}.\n`
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, timeCancel * 1000)
+          );
+          continue;
+        }
+      } else {
+        if (wma45 < config.WMAlimitBuy && rsi < wma45) {
+          console.log(
+            `WMA45 is below the buy limit and RSI is below WMA45. Placing BUY limit order for ${pair}.\n`
+          );
+          side = Side.Bid;
+          priceInTicks = marketState.floatPriceToTicks(
+            currentPrice * (1 - percentage / 100)
+          );
+        } else if (wma45 > config.WMAlimitSell && rsi > wma45) {
+          console.log(
+            `WMA45 is above the sell limit and RSI is above WMA45. Placing SELL limit order for ${pair}.\n`
+          );
+          side = Side.Ask;
+          priceInTicks = marketState.floatPriceToTicks(
+            currentPrice * (1 + percentage / 100)
+          );
+        } else {
+          console.log(`No conditions met for placing orders, ${pair}.\n`);
+          await new Promise((resolve) =>
+            setTimeout(resolve, timeCancel * 1000)
+          );
+          continue;
+        }
+      }
+    }
 
-    side = Side.Bid;
-    priceInTicks = marketState.floatPriceToTicks(
-      currentPrice * (1 + percentage / 100)
-    );
-    console.log(`currentPrice: ${currentPrice}, priceInTicks: ${priceInTicks}`);
+    // side = Side.Bid;
+    // priceInTicks = marketState.floatPriceToTicks(
+    //   currentPrice * (1 - percentage / 100)
+    // );
+    console.log(`currentPrice: ${currentPrice}`);
     const baseAtoms =
       parseFloat((volume / currentPrice).toFixed(8)) *
       10 ** marketState.data.header.baseParams.decimals;
+    // console.log(`baseAtoms: ${baseAtoms}`);
     const quoteAtoms =
       parseFloat(volume.toFixed(8)) *
       10 ** marketState.data.header.quoteParams.decimals;
     const numBaseLots = marketState.baseAtomsToBaseLots(baseAtoms);
     const numQuoteLots = marketState.quoteAtomsToQuoteLots(quoteAtoms);
-    console.log(
-      `numBaseLots: ${numBaseLots} (for ask/sell orders), numQuoteLots: ${numQuoteLots} (for bid/buy orders)`
-    );
+    // console.log(
+    //   `numBaseLots: ${numBaseLots} (for ask/sell orders), numQuoteLots: ${numQuoteLots} (for bid/buy orders)`
+    // );
     // console.log(`Converted from volume: ${volume}`);
+    const minimumOrderVolume = calculateMinimumOrderVolume(
+      marketState,
+      currentPrice
+    );
+    // console.log(`Minimum order volume: ${minimumOrderVolume.toFixed(6)} USDC`);
+    if (volume < minimumOrderVolume) {
+      console.log(
+        `Error: Volume is less than the minimum order volume of ${minimumOrderVolume.toFixed(
+          6
+        )} USDC`
+      );
+      await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
+      console.log("Ending process due to insufficient volume.");
+      process.exit(0);
+    }
+
     // Ensure either numBaseLots or numQuoteLots is nonzero
-    if (numBaseLots == 0 && numQuoteLots == 0) {
+    if (numBaseLots == 0 || numQuoteLots == 0) {
       console.error("Either numBaseLots or numQuoteLots must be nonzero.");
       await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
       continue;
@@ -254,9 +269,9 @@ async function trade(
       totalBaseBalance,
       totalQuoteBalance,
     } = await checkUserBalance(connection, marketState, trader);
-    console.log(
-      `solBalance: ${solBalance}, baseWalletBalance: ${baseWalletBalance}, quoteWalletBalance: ${quoteWalletBalance}`
-    );
+    // console.log(
+    //   `solBalance: ${solBalance}, baseWalletBalance: ${baseWalletBalance}, quoteWalletBalance: ${quoteWalletBalance}`
+    // );
     console.log(
       `Placing order with side: ${Side[side]}, volume: ${volume} USD, priceInTicks: ${priceInTicks}`
     );
@@ -265,15 +280,15 @@ async function trade(
     if (side === Side.Bid) {
       const requiredQuoteUnits =
         numQuoteLots * Number(marketState.data.header.quoteLotSize);
-      console.log(
-        `requiredQuoteUnits: ${requiredQuoteUnits}, ${Number(
-          marketState.data.header.quoteLotSize
-        )}`
-      );
+      // console.log(
+      //   `requiredQuoteUnits: ${requiredQuoteUnits}, ${Number(
+      //     marketState.data.header.quoteLotSize
+      //   )}`
+      // );
       const requiredQuoteBalance =
         requiredQuoteUnits / 10 ** marketState.data.header.quoteParams.decimals;
-      console.log(`requiredQuoteBalance: ${requiredQuoteBalance}`);
-      console.log(`quoteWalletBalance: ${quoteWalletBalance}`);
+      // console.log(`requiredQuoteBalance: ${requiredQuoteBalance}`);
+      // console.log(`quoteWalletBalance: ${quoteWalletBalance}`);
 
       if (quoteWalletBalance < requiredQuoteBalance) {
         console.error("Error: Insufficient quote balance to place the order");
@@ -286,86 +301,90 @@ async function trade(
       }
     }
 
-    // if (side === Side.Ask) {
-    //   const requiredBaseUnits =
-    //     numBaseLots * Number(marketState.data.header.baseLotSize);
-    //   const requiredBaseBalance =
-    //     requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
+    if (side === Side.Ask) {
+      const requiredBaseUnits =
+        numBaseLots * Number(marketState.data.header.baseLotSize);
+      const requiredBaseBalance =
+        requiredBaseUnits / 10 ** marketState.data.header.baseParams.decimals;
 
-    //   if (baseWalletBalance < requiredBaseBalance) {
-    //     console.error("Error: Insufficient base balance to place the order");
-    //     console.log(
-    //       `Wallet base balance: ${baseWalletBalance}, required: ${requiredBaseBalance}`
-    //     );
-    //     // Only wrap the missing SOL required for the order
-    //     const amountToWrap = requiredBaseBalance - baseWalletBalance;
-    //     console.log(`Wrapping ${amountToWrap} SOL into wSOL...`);
+      if (baseWalletBalance < requiredBaseBalance) {
+        console.error("Error: Insufficient base balance to place the order");
+        console.log(
+          `Wallet base balance: ${baseWalletBalance}, required: ${requiredBaseBalance}`
+        );
+        // Only wrap the missing SOL required for the order
+        const amountToWrap = requiredBaseBalance - baseWalletBalance;
+        console.log(`Wrapping ${amountToWrap} SOL into wSOL...`);
 
-    //     if (solBalance >= amountToWrap) {
-    //       try {
-    //         // Wrap only the missing SOL
-    //         await wrapToken(
-    //           connection,
-    //           trader,
-    //           amountToWrap,
-    //           new PublicKey("So11111111111111111111111111111111111111112"),
-    //           "wSOL"
-    //         );
-    //         // Optionally wait a bit for the new balance to reflect on-chain
-    //         await new Promise((resolve) => setTimeout(resolve, 2000));
-    //       } catch (error) {
-    //         console.error("Error wrapping SOL into wSOL:", error);
-    //         await new Promise((resolve) =>
-    //           setTimeout(resolve, timeCancel * 1000)
-    //         );
-    //         continue;
-    //       }
-    //     } else {
-    //       console.error("Error: Insufficient SOL to wrap into wSOL");
-    //       console.log(`SOL balance: ${solBalance}, required: ${amountToWrap}`);
-    //       await new Promise((resolve) =>
-    //         setTimeout(resolve, timeCancel * 1000)
-    //       );
-    //       continue;
-    //     }
-    //   }
-    // }
+        if (solBalance >= amountToWrap) {
+          try {
+            // Wrap only the missing SOL
+            await wrapToken(
+              connection,
+              trader,
+              amountToWrap,
+              new PublicKey("So11111111111111111111111111111111111111112"),
+              "wSOL"
+            );
+            // Optionally wait a bit for the new balance to reflect on-chain
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          } catch (error) {
+            console.error("Error wrapping SOL into wSOL:", error);
+            await new Promise((resolve) =>
+              setTimeout(resolve, timeCancel * 1000)
+            );
+            continue;
+          }
+        } else {
+          console.error("Error: Insufficient SOL to wrap into wSOL");
+          console.log(`SOL balance: ${solBalance}, required: ${amountToWrap}`);
+          await new Promise((resolve) =>
+            setTimeout(resolve, timeCancel * 1000)
+          );
+          continue;
+        }
+      }
+    }
 
     try {
-      // const lots = side === Side.Ask ? numBaseLots : numQuoteLots;
-      const lots = numQuoteLots;
-      // if (side === Side.Ask) {
-      //   await placeOrderWithSol(
-      //     connection,
-      //     marketState,
-      //     trader,
-      //     side,
-      //     lots,
-      //     priceInTicks
-      //   );
-      // } else {
-      await placeOrderWithUSD(
-        connection,
-        marketState,
-        trader,
-        side,
-        lots,
-        priceInTicks
-      );
-      // }
+      const lots = side === Side.Ask ? numBaseLots : numQuoteLots;
+      // const lots = numQuoteLots;
+      if (side === Side.Ask) {
+        await placeOrderWithSol(
+          connection,
+          marketState,
+          trader,
+          side,
+          lots,
+          priceInTicks
+        );
+      } else {
+        await placeOrderWithUSD(
+          connection,
+          marketState,
+          trader,
+          side,
+          lots,
+          priceInTicks,
+          currentPrice
+        );
+      }
     } catch (error) {
       if (error instanceof SendTransactionError) {
-        console.error("SendTransactionError:", error.message);
-        console.error("Transaction logs:", await error.getLogs(connection));
+        const logs = await error.getLogs(connection);
+        console.error(
+          "Detailed Transaction logs:",
+          JSON.stringify(logs, null, 2)
+        );
       } else {
         console.error("Error placing order:", error);
       }
     }
-    // await new Promise((resolve) => setTimeout(resolve, 5000));
-    // await marketState.reloadFromNetwork(connection);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await marketState.reloadFromNetwork(connection);
 
-    // const currentOrders = await getCurrentOrders(marketState, trader.publicKey);
-    // console.log("Current orders:", currentOrders.length);
+    const currentOrders = await getCurrentOrders(marketState, trader.publicKey);
+    console.log("Current orders:", currentOrders.length);
 
     // Wait for the specified time
     await new Promise((resolve) => setTimeout(resolve, timeCancel * 1000));
