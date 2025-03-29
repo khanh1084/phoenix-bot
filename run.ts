@@ -4,16 +4,12 @@ import {
   PublicKey,
   sendAndConfirmTransaction,
   Transaction,
-  SystemProgram,
-  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import base58 from "bs58";
 import {
   createPhoenixClient,
   getMarketState,
-  placeOrder,
   cancelAllOrders,
-  getCurrentPrice,
   getCurrentOrders,
   checkUserBalance,
   wrapToken,
@@ -43,27 +39,22 @@ async function trade(
   percentage: number,
   timeCancel: number
 ) {
+  // Keep track of the number of orders from the previous cycle
+  let previousOrderCount = 0;
+
   while (true) {
     try {
       const currentOrders = await getCurrentOrders(
         marketState,
         trader.publicKey
       );
-      // console.log("Current orders count:", currentOrders.length);
-      // currentOrders.forEach((order, i) => {
-      //   console.log(`Order ${i + 1}:`, {
-      //     orderSequenceNumber: order.orderSequenceNumber.toString(),
-      //     priceInTicks: order.priceInTicks.toString(),
-      //     side: Side[order.side],
-      //     sizeInBaseLots: order.sizeInBaseLots.toString(),
-      //     lastValidSlot: order.lastValidSlot.toString(),
-      //     lastValidUnixTimestampInSeconds:
-      //       order.lastValidUnixTimestampInSeconds.toString(),
-      //   });
-      // });
-      console.log("Canceling all orders...");
-      if (currentOrders.length > 0) {
-        let cancelAllOrdersTxId;
+      const currentOrderCount = currentOrders.length;
+
+      // Only cancel orders if the count has changed
+      if (currentOrderCount > 0 && currentOrderCount !== previousOrderCount) {
+        console.log(
+          `Canceling orders... (${currentOrderCount} orders found, previous: ${previousOrderCount})`
+        );
         try {
           const cancelAllOrdersTx = await cancelAllOrders(
             marketState,
@@ -80,7 +71,7 @@ async function trade(
             feePayer: trader.publicKey,
           }).add(cancelAllOrdersTx);
 
-          cancelAllOrdersTxId = await sendAndConfirmTransaction(
+          const cancelAllOrdersTxId = await sendAndConfirmTransaction(
             connection,
             cancelTransaction,
             [trader],
@@ -91,15 +82,13 @@ async function trade(
           );
           await new Promise((resolve) => setTimeout(resolve, 5000));
           await marketState.reloadFromNetwork(connection);
+
           // Verify that all orders are canceled
           const updatedOrders = await getCurrentOrders(
             marketState,
             trader.publicKey
           );
-          // console.log("Updated orders after cancel:", updatedOrders);
-          // if (updatedOrders.length > 0) {
-          //   console.error("Error: Some orders were not canceled.");
-          // }
+          console.log(`Orders after cancellation: ${updatedOrders.length}`);
         } catch (error) {
           if (error instanceof SendTransactionError) {
             console.error("SendTransactionError:", error.message);
@@ -108,9 +97,16 @@ async function trade(
             console.error("Error canceling orders:", error);
           }
         }
+      } else if (currentOrderCount > 0) {
+        console.log(
+          `Skipping order cancellation - order count unchanged (${currentOrderCount})`
+        );
       } else {
         console.log("No orders to cancel.");
       }
+
+      // Update the previous order count for the next iteration
+      previousOrderCount = currentOrderCount;
     } catch (error: any) {
       console.error(`Error checking orders: ${error.message}`);
     }
